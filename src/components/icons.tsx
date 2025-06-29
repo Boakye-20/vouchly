@@ -1,6 +1,6 @@
-import type { SVGProps } from "react";
+import type { FC, SVGProps } from "react";
 
-export function VouchlyLogo(props: SVGProps<SVGSVGElement>) {
+export const VouchlyLogo: FC<SVGProps<SVGSVGElement>> = (props) => {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -22,4 +22,4 @@ export function VouchlyLogo(props: SVGProps<SVGSVGElement>) {
             <path d="m20.5 13.5-4.5 3" />
         </svg>
     )
-}
+};
