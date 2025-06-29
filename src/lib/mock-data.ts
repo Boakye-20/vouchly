@@ -26,9 +26,11 @@ export interface Session {
   focus_topic: string;
   initial_message?: string;
   status: "requested" | "scheduled" | "completed" | "cancelled" | "in_progress";
-  meeting_link?: string;
   my_start_confirmed?: boolean;
   partner_start_confirmed?: boolean;
+  video_room_name?: string;
+  video_room_url?: string;
+  video_join_enabled_at?: string;
 }
 
 export const mockUsers: User[] = [
@@ -124,6 +126,11 @@ export const mockUsers: User[] = [
   },
 ];
 
+const session102_start = new Date(Date.now() + 1000 * 60 * 60 * 24 * 2);
+const session103_start = new Date(Date.now() + 1000 * 60 * 10);
+const session104_start = new Date(Date.now() - 1000 * 60 * 30);
+
+
 export const mockSessions: Session[] = [
   {
     id: 101,
@@ -139,35 +146,43 @@ export const mockSessions: Session[] = [
     id: 102,
     initiator_id: 1, // Current user is initiator
     recipient_id: 3,
-    scheduled_start: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(),
+    scheduled_start: session102_start.toISOString(),
     duration_minutes: 90,
     focus_topic: "Quantum Chemistry",
-    meeting_link: "https://meet.google.com/xyz-abc-def",
     status: "scheduled",
     my_start_confirmed: false,
     partner_start_confirmed: false,
+    video_room_name: "vouchly-session-102",
+    video_room_url: "https://meet.jit.si/vouchly-session-102",
+    video_join_enabled_at: new Date(session102_start.getTime() - 5 * 60 * 1000).toISOString(),
   },
   {
     id: 103,
     initiator_id: 4,
     recipient_id: 1,
-    scheduled_start: new Date(Date.now() + 1000 * 60 * 10).toISOString(), // Starts soon
+    scheduled_start: session103_start.toISOString(), // Starts soon
     duration_minutes: 120,
     focus_topic: "General Relativity Problems",
     status: "scheduled",
     my_start_confirmed: false,
     partner_start_confirmed: true,
+    video_room_name: "vouchly-session-103",
+    video_room_url: "https://meet.jit.si/vouchly-session-103",
+    video_join_enabled_at: new Date(session103_start.getTime() - 5 * 60 * 1000).toISOString(),
   },
   {
     id: 104,
     initiator_id: 1,
     recipient_id: 5,
-    scheduled_start: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // In progress
+    scheduled_start: session104_start.toISOString(), // In progress
     duration_minutes: 60,
     focus_topic: "Microeconomics",
     status: "in_progress",
     my_start_confirmed: true,
     partner_start_confirmed: true,
+    video_room_name: "vouchly-session-104",
+    video_room_url: "https://meet.jit.si/vouchly-session-104",
+    video_join_enabled_at: new Date(session104_start.getTime() - 5 * 60 * 1000).toISOString(),
   },
     {
     id: 105,

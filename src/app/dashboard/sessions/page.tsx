@@ -19,19 +19,25 @@ function SessionCard({ session }: { session: Session }) {
   const scheduledStart = new Date(session.scheduled_start);
   const now = new Date();
   const timeDiffHours = (scheduledStart.getTime() - now.getTime()) / (1000 * 60 * 60);
-  const isLockedIn = timeDiffHours < 4 && timeDiffHours > -session.duration_minutes / 60; // Locked if <4h away and not long past
+  const isLockedIn = timeDiffHours < 4 && timeDiffHours > -session.duration_minutes / 60;
+  
+  const videoJoinEnabledAt = session.video_join_enabled_at ? new Date(session.video_join_enabled_at) : null;
+  const isVideoAccessTime = videoJoinEnabledAt && videoJoinEnabledAt < now;
+  const canJoinVideo = (session.status === 'scheduled' || session.status === 'in_progress') && isVideoAccessTime && session.video_room_url;
 
   const handleAction = async (action: "accept" | "decline" | "start" | "complete_yes" | "complete_no" | "reschedule" | "cancel") => {
     let res;
     switch(action) {
         case "accept":
-            toast({ title: "Session Accepted!", description: `Your study session with ${partner?.full_name} is scheduled.` });
+            toast({ title: "Session Accepted!", description: `Your study session with ${partner?.full_name} is scheduled. A video room has been created.` });
             break;
         case "decline":
             toast({ title: "Session Declined", variant: "destructive", description: `You have declined the session with ${partner?.full_name}.` });
             break;
         case "start":
-            toast({ title: "Start Confirmed!", description: "Your session is now in progress."});
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'START_CONFIRMED' });
+            if(res.success) toast({ title: "Start Confirmed!", description: res.data?.message });
+            else toast({ title: "Error", description: res.error, variant: 'destructive' });
             break;
         case "complete_yes":
             res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'COMPLETION_CONFIRMED' });
@@ -83,7 +89,32 @@ function SessionCard({ session }: { session: Session }) {
         <div className="flex items-center"><Clock className="w-4 h-4 mr-2" /> {session.duration_minutes} minutes</div>
         <div className="flex items-center"><Hash className="w-4 h-4 mr-2" /> Focus: {session.focus_topic}</div>
         {session.initial_message && <div className="flex items-start"><MessageSquare className="w-4 h-4 mr-2 mt-1" /> <p className="italic">"{session.initial_message}"</p></div>}
-        {session.meeting_link && <div className="flex items-center"><Video className="w-4 h-4 mr-2" /><a href={session.meeting_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meeting Link</a></div>}
+        
+        { (session.status === 'scheduled' || session.status === 'in_progress') && session.video_room_url && (
+            <div className="pt-2">
+                {canJoinVideo ? (
+                     <Button 
+                      onClick={() => window.open(session.video_room_url, '_blank')}
+                      className="w-full bg-green-600 text-white hover:bg-green-700"
+                    >
+                      <Video className="w-4 h-4 mr-2" />
+                      {session.status === 'in_progress' ? 'Re-join Video Call' : 'Join Video Call'}
+                    </Button>
+                ) : (
+                    <>
+                        <Button disabled className="w-full cursor-not-allowed">
+                          <Video className="w-4 h-4 mr-2" />
+                          Video opens 5 mins before start
+                        </Button>
+                        {videoJoinEnabledAt && (
+                           <p className="text-xs text-muted-foreground text-center mt-1">
+                               Video access available at {videoJoinEnabledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           </p>
+                        )}
+                    </>
+                )}
+            </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         {session.status === 'requested' && isRecipient && (
@@ -102,7 +133,7 @@ function SessionCard({ session }: { session: Session }) {
                 <X className="w-4 h-4 mr-2" />
                 {isLockedIn ? 'Cancel (No-Show)' : 'Cancel Session'}
             </Button>
-            <Button size="sm" onClick={() => handleAction('start')}><Clock className="w-4 h-4 mr-2" />Confirm Start</Button>
+            <Button size="sm" onClick={() => handleAction('start')}><Clock className="w-4 h-4 mr-2" />Start Session in Vouchly</Button>
            </>
         )}
         {session.status === 'in_progress' && (
