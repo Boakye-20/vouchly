@@ -3,8 +3,6 @@
  * @fileOverview A flow that automatically adjusts a user's Vouch score based on their participation and reliability in study sessions.
  *
  * - adjustVouchScore - A function that handles the vouch score adjustment process.
- * - VouchScoreEventInput - The input type for the adjustVouchScore function.
- * - VouchScoreEventOutput - The return type for the adjustVouchScore function.
  */
 
 import { ai } from '@/ai/genkit';
@@ -30,7 +28,6 @@ const adjustVouchScoreFlow = ai.defineFlow(
   async ({ userId, eventType }) => {
     // NOTE: This is a simulation. In a real app, we would fetch the user from a database.
     // We'll use a mock user state to demonstrate the logic from the PRD.
-    // Setting consecutive_reschedules to 1 to test the penalty on the next reschedule.
     const mockUser = { vouch_score: 80, consecutive_reschedules: 1 };
 
     let pointsChange = 0;
@@ -44,6 +41,11 @@ const adjustVouchScoreFlow = ai.defineFlow(
         reason = `Vouch Score increased by ${pointsChange} for successfully completing a session. Consecutive reschedule counter reset.`;
         break;
       
+      case 'START_CONFIRMED':
+         pointsChange = 0;
+         reason = `Start confirmed! Remember to confirm completion at the end to earn Vouch points.`;
+         break;
+
       case 'COMPLETION_REPORTED_ISSUE':
         pointsChange = 0;
         reason = `Thank you for your feedback. This session has been flagged for review. Your Vouch Score is not affected.`;
