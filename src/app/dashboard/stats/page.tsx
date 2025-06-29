@@ -131,7 +131,7 @@ export default function StatsPage() {
                     </TableCell>
                     <TableCell className="text-sm">{log.reason}</TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleDateString()}
+                      {new Date(log.timestamp).toLocaleDateString('en-GB')}
                     </TableCell>
                   </TableRow>
                 ))}
