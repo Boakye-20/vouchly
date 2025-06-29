@@ -1,6 +1,7 @@
 "use server";
 
-import { adjustVouchScore, type VouchScoreEventInput } from "@/ai/flows/vouch-score-accountability";
+import { adjustVouchScore } from "@/ai/flows/vouch-score-accountability";
+import type { VouchScoreEventInput } from "@/ai/flows/vouch-score-accountability.types";
 
 export async function adjustVouchScoreAction(input: VouchScoreEventInput) {
   try {

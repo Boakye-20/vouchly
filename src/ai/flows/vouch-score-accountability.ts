@@ -8,22 +8,15 @@
  * - VouchScoreEventOutput - The return type for the adjustVouchScore function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import {
+  VouchScoreEventInputSchema,
+  type VouchScoreEventInput,
+  VouchScoreEventOutputSchema,
+  type VouchScoreEventOutput,
+} from './vouch-score-accountability.types';
 
-export const VouchScoreEventInputSchema = z.object({
-  userId: z.number().describe('The ID of the user whose vouch score needs adjustment.'),
-  sessionId: z.number().describe('The ID of the session related to the event.'),
-  eventType: z.enum(['COMPLETED', 'REPORTED_ISSUE', 'RESCHEDULED']).describe('The type of event that occurred.'),
-});
-export type VouchScoreEventInput = z.infer<typeof VouchScoreEventInputSchema>;
-
-export const VouchScoreEventOutputSchema = z.object({
-  newVouchScore: z.number().describe("The user's new vouch score after the adjustment."),
-  success: z.boolean().describe('Whether the vouch score adjustment was successful.'),
-  message: z.string().describe('A message indicating the result of the vouch score adjustment.'),
-});
-export type VouchScoreEventOutput = z.infer<typeof VouchScoreEventOutputSchema>;
+export type { VouchScoreEventInput, VouchScoreEventOutput };
 
 export async function adjustVouchScore(input: VouchScoreEventInput): Promise<VouchScoreEventOutput> {
   return adjustVouchScoreFlow(input);
