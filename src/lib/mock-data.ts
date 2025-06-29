@@ -14,6 +14,7 @@ export interface User {
   camera_preference: "Camera always on" | "Camera on for check-ins" | "Camera always off" | "Flexible";
   bio: string;
   weekly_goal: number;
+  consecutive_reschedules: number;
 }
 
 export interface Session {
@@ -47,6 +48,7 @@ export const mockUsers: User[] = [
     camera_preference: "Camera on for check-ins",
     bio: "Focused on algorithms and theoretical computer science. Looking for a dedicated partner for problem-solving sessions.",
     weekly_goal: 4,
+    consecutive_reschedules: 0,
   },
   {
     id: 2,
@@ -64,6 +66,7 @@ export const mockUsers: User[] = [
     camera_preference: "Camera always on",
     bio: "Mechanical engineering student. Need someone to keep me accountable for textbook readings.",
     weekly_goal: 3,
+    consecutive_reschedules: 1,
   },
   {
     id: 3,
@@ -81,6 +84,7 @@ export const mockUsers: User[] = [
     camera_preference: "Flexible",
     bio: "Passionate about organic chemistry. Let's review lecture notes and tackle practice problems together!",
     weekly_goal: 5,
+    consecutive_reschedules: 0,
   },
   {
     id: 4,
@@ -98,6 +102,7 @@ export const mockUsers: User[] = [
     camera_preference: "Camera always off",
     bio: "Deep diving into quantum mechanics and relativity. Prefer silent sessions to focus on complex equations.",
     weekly_goal: 2,
+    consecutive_reschedules: 0,
   },
   {
     id: 5,
@@ -115,6 +120,7 @@ export const mockUsers: User[] = [
     camera_preference: "Camera always on",
     bio: "Enjoy discussing economic theories and their real-world applications. Let's motivate each other!",
     weekly_goal: 3,
+    consecutive_reschedules: 0,
   },
 ];
 

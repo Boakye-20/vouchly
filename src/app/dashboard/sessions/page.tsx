@@ -16,31 +16,35 @@ function SessionCard({ session }: { session: Session }) {
   const partner = mockUsers.find(u => u.id === (session.initiator_id === currentUser.id ? session.recipient_id : session.initiator_id));
   const isRecipient = session.recipient_id === currentUser.id;
 
-  const handleAction = async (action: "accept" | "decline" | "start" | "complete_yes" | "complete_no") => {
-    console.log(`Action: ${action} on session ${session.id}`);
-
-    if (action === "accept") {
-        toast({ title: "Session Accepted!", description: `Your study session with ${partner?.full_name} is scheduled.` });
-    }
-    if (action === "decline") {
-        toast({ title: "Session Declined", variant: "destructive", description: `You have declined the session with ${partner?.full_name}.` });
-    }
-
-    // Vouch Score Logic
-    if (action === 'start') {
-        const res = await adjustVouchScoreAction({ userId: currentUser.id, pointsChange: 0, reason: "User confirmed start", sessionId: session.id });
-        if(res.success) toast({ title: "Start Confirmed!", description: res.data?.message });
-        else toast({ title: "Error", description: res.error, variant: 'destructive' });
-    }
-    if (action === 'complete_yes') {
-        const res = await adjustVouchScoreAction({ userId: currentUser.id, pointsChange: 2, reason: "Session completed successfully", sessionId: session.id });
-        if(res.success) toast({ title: "Session Completed!", description: res.data?.message });
-        else toast({ title: "Error", description: res.error, variant: 'destructive' });
-    }
-    if (action === 'complete_no') {
-        const res = await adjustVouchScoreAction({ userId: currentUser.id, pointsChange: -1, reason: "User reported issue with session", sessionId: session.id });
-        if(res.success) toast({ title: "Report Submitted", description: res.data?.message });
-        else toast({ title: "Error", description: res.error, variant: 'destructive' });
+  const handleAction = async (action: "accept" | "decline" | "start" | "complete_yes" | "complete_no" | "reschedule") => {
+    let res;
+    switch(action) {
+        case "accept":
+            toast({ title: "Session Accepted!", description: `Your study session with ${partner?.full_name} is scheduled.` });
+            break;
+        case "decline":
+            toast({ title: "Session Declined", variant: "destructive", description: `You have declined the session with ${partner?.full_name}.` });
+            break;
+        case "start":
+            // Per PRD, start confirmation is for preventing no-show penalties, which are handled by backend logic.
+            // For the UI, we can just give a confirmation toast.
+            toast({ title: "Start Confirmed!", description: "Your session is now in progress."});
+            break;
+        case "complete_yes":
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'COMPLETED' });
+            if(res.success) toast({ title: "Session Completed!", description: res.data?.message });
+            else toast({ title: "Error", description: res.error, variant: 'destructive' });
+            break;
+        case "complete_no":
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'REPORTED_ISSUE' });
+            if(res.success) toast({ title: "Report Submitted", description: res.data?.message });
+            else toast({ title: "Error", description: res.error, variant: 'destructive' });
+            break;
+        case "reschedule":
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'RESCHEDULED' });
+            if(res.success) toast({ title: "Session Rescheduled", description: res.data?.message });
+            else toast({ title: "Error", description: res.error, variant: 'destructive' });
+            break;
     }
   };
 
@@ -77,7 +81,10 @@ function SessionCard({ session }: { session: Session }) {
           </>
         )}
         {session.status === 'scheduled' && (
+           <>
+            <Button variant="outline" size="sm" onClick={() => handleAction('reschedule')}><Calendar className="w-4 h-4 mr-2" />Reschedule</Button>
             <Button size="sm" onClick={() => handleAction('start')}><Clock className="w-4 h-4 mr-2" />Confirm Start</Button>
+           </>
         )}
         {session.status === 'in_progress' && (
             <>
