@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { mockSessions, mockUsers, currentUser, Session } from "@/lib/mock-data";
-import { Check, X, Clock, Calendar, Hash, MessageSquare, Video, AlertTriangle } from "lucide-react";
+import { Check, X, Clock, Calendar, Hash, MessageSquare, Video, AlertTriangle, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { adjustVouchScoreAction } from "@/lib/actions";
 
@@ -16,7 +16,12 @@ function SessionCard({ session }: { session: Session }) {
   const partner = mockUsers.find(u => u.id === (session.initiator_id === currentUser.id ? session.recipient_id : session.initiator_id));
   const isRecipient = session.recipient_id === currentUser.id;
 
-  const handleAction = async (action: "accept" | "decline" | "start" | "complete_yes" | "complete_no" | "reschedule") => {
+  const scheduledStart = new Date(session.scheduled_start);
+  const now = new Date();
+  const timeDiffHours = (scheduledStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+  const isLockedIn = timeDiffHours < 4 && timeDiffHours > -session.duration_minutes / 60; // Locked if <4h away and not long past
+
+  const handleAction = async (action: "accept" | "decline" | "start" | "complete_yes" | "complete_no" | "reschedule" | "cancel") => {
     let res;
     switch(action) {
         case "accept":
@@ -26,24 +31,31 @@ function SessionCard({ session }: { session: Session }) {
             toast({ title: "Session Declined", variant: "destructive", description: `You have declined the session with ${partner?.full_name}.` });
             break;
         case "start":
-            // Per PRD, start confirmation is for preventing no-show penalties, which are handled by backend logic.
-            // For the UI, we can just give a confirmation toast.
             toast({ title: "Start Confirmed!", description: "Your session is now in progress."});
             break;
         case "complete_yes":
-            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'COMPLETED' });
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'COMPLETION_CONFIRMED' });
             if(res.success) toast({ title: "Session Completed!", description: res.data?.message });
             else toast({ title: "Error", description: res.error, variant: 'destructive' });
             break;
         case "complete_no":
-            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'REPORTED_ISSUE' });
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'COMPLETION_REPORTED_ISSUE' });
             if(res.success) toast({ title: "Report Submitted", description: res.data?.message });
             else toast({ title: "Error", description: res.error, variant: 'destructive' });
             break;
         case "reschedule":
-            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'RESCHEDULED' });
+            res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'RESCHEDULED_WITH_NOTICE' });
             if(res.success) toast({ title: "Session Rescheduled", description: res.data?.message });
             else toast({ title: "Error", description: res.error, variant: 'destructive' });
+            break;
+        case "cancel":
+            if (isLockedIn) {
+                 res = await adjustVouchScoreAction({ userId: currentUser.id, sessionId: session.id, eventType: 'CANCELLED_LOCKED_IN' });
+                 if(res.success) toast({ title: "Cancelled (No-Show)", description: res.data?.message, variant: 'destructive' });
+                 else toast({ title: "Error", description: res.error, variant: 'destructive' });
+            } else {
+                toast({ title: "Session Cancelled", description: `You have cancelled the session with ${partner?.full_name}.` });
+            }
             break;
     }
   };
@@ -82,7 +94,14 @@ function SessionCard({ session }: { session: Session }) {
         )}
         {session.status === 'scheduled' && (
            <>
-            <Button variant="outline" size="sm" onClick={() => handleAction('reschedule')}><Calendar className="w-4 h-4 mr-2" />Reschedule</Button>
+            <Button variant="outline" size="sm" onClick={() => handleAction('reschedule')} disabled={isLockedIn}>
+              {isLockedIn ? <Lock className="w-4 h-4 mr-2" /> : <Calendar className="w-4 h-4 mr-2" />}
+              {isLockedIn ? 'Reschedule Locked' : 'Reschedule'}
+            </Button>
+             <Button variant="destructive" size="sm" onClick={() => handleAction('cancel')}>
+                <X className="w-4 h-4 mr-2" />
+                {isLockedIn ? 'Cancel (No-Show)' : 'Cancel Session'}
+            </Button>
             <Button size="sm" onClick={() => handleAction('start')}><Clock className="w-4 h-4 mr-2" />Confirm Start</Button>
            </>
         )}
