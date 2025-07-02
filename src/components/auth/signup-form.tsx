@@ -1,225 +1,138 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, MailCheck } from 'lucide-react';
+import { UK_UNIVERSITIES } from '@/lib/universities';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+export function SignUpForm() {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    const [step, setStep] = useState(1);
+    // --- NEW: State to show success message after sending verification ---
+    const [isVerificationSent, setIsVerificationSent] = useState(false);
 
-const availabilitySchema = z.object({
-  monday: z.array(z.string()),
-  tuesday: z.array(z.string()),
-  wednesday: z.array(z.string()),
-  thursday: z.array(z.string()),
-  friday: z.array(z.string()),
-  saturday: z.array(z.string()),
-  sunday: z.array(z.string()),
-});
-
-const formSchema = z.object({
-  email: z.string().email().refine(email => email.endsWith('.ac.uk'), {
-    message: "Must be a valid UK university email (.ac.uk)"
-  }),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-  fullName: z.string().min(2, "Full name is required."),
-  course: z.string().min(2, "Course name is required."),
-  yearOfStudy: z.string().min(1, "Please select your year of study."),
-  studyAtmosphere: z.string().min(1, "Please select your preferred study atmosphere."),
-  cameraPreference: z.string().min(1, "Please select your camera preference."),
-  weeklyGoal: z.number().min(1).max(20),
-  availability: availabilitySchema,
-  bio: z.string().max(150, "Bio must be 150 characters or less.").optional(),
-});
-
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const times = ["morning", "afternoon", "evening"];
-const timeEmojis = ["🌅", "☀️", "🌙"];
-
-export function SignupForm() {
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      fullName: "",
-      course: "",
-      yearOfStudy: "",
-      studyAtmosphere: "",
-      cameraPreference: "",
-      weeklyGoal: 3,
-      availability: {
-        monday: [], tuesday: [], wednesday: [], thursday: [],
-        friday: [], saturday: [], sunday: [],
-      },
-      bio: "",
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Signup submitted:", values);
-    toast({
-      title: "Account Created!",
-      description: "Welcome to Vouchly! Redirecting to your dashboard.",
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        name: '',
+        university: '',
+        course: '',
+        yearOfStudy: '',
     });
-    router.push("/dashboard");
-  }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline">Create Your Account</CardTitle>
-        <CardDescription>Join a community of motivated students.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField name="fullName" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="email" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>University Email</FormLabel>
-                  <FormControl><Input placeholder="j.doe23@cam.ac.uk" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="password" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="course" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Course</FormLabel>
-                  <FormControl><Input placeholder="BSc Computer Science" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="yearOfStudy" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Year of Study</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="Year 1">Year 1</SelectItem>
-                      <SelectItem value="Year 2">Year 2</SelectItem>
-                      <SelectItem value="Year 3">Year 3</SelectItem>
-                      <SelectItem value="Year 4+">Year 4+</SelectItem>
-                      <SelectItem value="Postgraduate">Postgraduate</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="studyAtmosphere" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Study Atmosphere</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select atmosphere" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="Silent & Independent">Silent & Independent</SelectItem>
-                      <SelectItem value="Quietly Co-working">Quietly Co-working</SelectItem>
-                      <SelectItem value="Motivational & Social">Motivational & Social</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="cameraPreference" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Camera Preference</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="Camera always on">Camera always on</SelectItem>
-                      <SelectItem value="Camera on for check-ins">Camera on for check-ins</SelectItem>
-                      <SelectItem value="Camera always off">Camera always off</SelectItem>
-                      <SelectItem value="Flexible">Flexible</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="weeklyGoal" control={form.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Weekly Session Goal</FormLabel>
-                   <FormControl><Input type="number" min={1} max={20} {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+    const validateEmail = (email: string) => {
+        return email.endsWith('.ac.uk');
+    };
+
+    const handleStep1 = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validateEmail(formData.email)) {
+            toast({ title: "Invalid email", description: "Please use your UK university email (.ac.uk)", variant: "destructive" });
+            return;
+        }
+        if (!formData.university) {
+            toast({ title: "University required", description: "Please select your university", variant: "destructive" });
+            return;
+        }
+        setStep(2);
+    };
+
+    // --- UPDATED: This function now sends the verification email ---
+    const handleSignUp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const user = userCredential.user;
+
+            // --- NEW: Send the verification email immediately after creation ---
+            await sendEmailVerification(user);
+
+            // Create user profile in Firestore
+            await setDoc(doc(db, 'users', user.uid), {
+                uid: user.uid,
+                email: formData.email,
+                name: formData.name,
+                university: formData.university,
+                course: formData.course,
+                yearOfStudy: formData.yearOfStudy,
+                vouchScore: 80,
+                sessionsCompleted: 0,
+                consecutiveReschedules: 0,
+                availability: {}, // Initialize as empty object
+                profileComplete: false, // Profile is not complete until setup flow is done
+                createdAt: serverTimestamp(),
+            });
+
+            toast({
+                title: "Account Created!",
+                description: "We've sent a verification link to your email.",
+            });
+
+            // --- NEW: Update UI to show success message ---
+            setIsVerificationSent(true);
+
+        } catch (error: any) {
+            let errorMessage = "An error occurred during sign up";
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = "This email is already registered. Please log in instead.";
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = "Password should be at least 6 characters long.";
+            }
+            toast({ title: "Error", description: errorMessage, variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // --- NEW: Render a success message after email is sent ---
+    if (isVerificationSent) {
+        return (
+            <div className="text-center space-y-4 p-4">
+                <MailCheck className="mx-auto h-12 w-12 text-green-500" />
+                <h3 className="text-xl font-semibold">Please check your email</h3>
+                <p className="text-muted-foreground">
+                    A verification link has been sent to <span className="font-medium text-primary">{formData.email}</span>.
+                    Please click the link to activate your account.
+                </p>
+                <p className="text-sm text-muted-foreground pt-4">
+                    Once verified, you can close this tab and log in.
+                </p>
             </div>
+        );
+    }
 
-            <div>
-                <FormLabel>Your Availability</FormLabel>
-                <CardDescription>Select when you're generally free to study.</CardDescription>
-                <div className="grid grid-cols-4 md:grid-cols-7 gap-2 p-2 border rounded-md mt-2">
-                    {days.map((day) => (
-                        <div key={day} className="flex flex-col items-center gap-1">
-                            <p className="font-bold text-sm">{day.substring(0, 3)}</p>
-                            {times.map((time, index) => (
-                                <FormField
-                                    key={`${day}-${time}`}
-                                    control={form.control}
-                                    name={`availability.${day.toLowerCase() as keyof z.infer<typeof availabilitySchema>}`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                                <Checkbox
-                                                    checked={field.value?.includes(time)}
-                                                    onCheckedChange={(checked) => {
-                                                        return checked
-                                                            ? field.onChange([...(field.value || []), time])
-                                                            : field.onChange(field.value?.filter((value) => value !== time));
-                                                    }}
-                                                />
-                                            </FormControl>
-                                            <FormLabel className="text-sm font-normal">{timeEmojis[index]}</FormLabel>
-                                        </FormItem>
-                                    )}
-                                />
-                            ))}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <FormField name="bio" control={form.control} render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bio (Optional)</FormLabel>
-                <FormControl><Textarea placeholder="Tell potential partners about your study goals..." {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <Button type="submit" className="w-full font-headline">Create Account</Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
-  );
+    return (
+        <div className="w-full max-w-md mx-auto">
+            {step === 1 ? (
+                <form onSubmit={handleStep1} className="space-y-4">
+                    {/* Step 1 form fields... (code unchanged) */}
+                    <div><Label htmlFor="email">University Email</Label><Input id="email" type="email" placeholder="your.name@university.ac.uk" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required /><p className="text-xs text-gray-500 mt-1">Must be a UK university email (.ac.uk)</p></div>
+                    <div><Label htmlFor="university">University</Label><SearchableSelect options={UK_UNIVERSITIES} value={formData.university} onValueChange={(value) => setFormData({ ...formData, university: value })} placeholder="Select your university..." searchPlaceholder="Search universities..." emptyText="No university found." /></div>
+                    <div><Label htmlFor="password">Password</Label><Input id="password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required minLength={6} /><p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p></div>
+                    <Button type="submit" className="w-full" disabled={!formData.email || !formData.password || !formData.university}>Continue →</Button>
+                </form>
+            ) : (
+                <form onSubmit={handleSignUp} className="space-y-4">
+                    {/* Step 2 form fields... (code unchanged) */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4"><p className="text-sm text-green-800 font-medium">✓ {formData.university}</p><p className="text-xs text-green-700">{formData.email}</p></div>
+                    <div><Label htmlFor="name">Full Name</Label><Input id="name" type="text" placeholder="John Smith" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required /></div>
+                    <div><Label htmlFor="course">Course</Label><Input id="course" type="text" placeholder="e.g., BSc Computer Science" value={formData.course} onChange={(e) => setFormData({ ...formData, course: e.target.value })} required /></div>
+                    <div><Label>Year of Study</Label><div className="grid grid-cols-2 gap-2 mt-2">{['Year 1', 'Year 2', 'Year 3', 'Year 4+'].map((year) => (<button key={year} type="button" onClick={() => setFormData({ ...formData, yearOfStudy: year })} className={`p-2.5 rounded-lg border transition-all font-medium ${formData.yearOfStudy === year ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-300 hover:border-gray-400'}`}>{year}</button>))}</div></div>
+                    <div className="flex gap-3 pt-2"><button type="button" onClick={() => setStep(1)} className="flex-1 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">← Back</button><Button type="submit" className="flex-1" disabled={isLoading || !formData.yearOfStudy || !formData.name || !formData.course}>{isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>) : ('Create Account')}</Button></div>
+                </form>
+            )}
+        </div>
+    );
 }
