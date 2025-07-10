@@ -29,9 +29,9 @@ export default function RootLayout({
                     <AuthProvider>
                         <TimezoneProvider>
                             {children}
-                            <Footer />
                             <Toaster />
                             <CookieConsent />
+                            <Footer />
                         </TimezoneProvider>
                     </AuthProvider>
                 </GoogleAnalyticsProvider>

@@ -16,6 +16,7 @@ import { LayoutDashboard, Users, CalendarClock, BarChart3, UserCircle, MessageSq
 import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+// REMOVE: import Footer from '@/components/layout/footer';
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -248,7 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // --- Original layout is rendered only if user is verified and timezone is set ---
     return (
-        <div className="flex flex-col md:flex-row h-screen bg-white overflow-hidden">
+        <div className="flex flex-col md:flex-row min-h-screen bg-white overflow-hidden">
             {/* Mobile Header */}
             <header className="md:hidden flex items-center justify-between p-4 border-b bg-white">
                 <Link href="/dashboard" className="flex items-center space-x-2">
@@ -314,15 +315,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex flex-1 flex-col">
                 <header className="flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6">
-                    <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}><Menu className="h-5 w-5" /></Button>
-                    <Link href="/dashboard" className="flex items-center gap-2 sm:hidden"><VouchlyLogo className="h-6 w-6 text-blue-600" /><span className="text-xl font-semibold tracking-tight text-gray-900">Vouchly</span></Link>
-                    <div className="flex items-center gap-4"><NotificationBell /></div>
+                    <div className="flex items-center gap-2 sm:hidden">
+                        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}><Menu className="h-5 w-5" /></Button>
+                        <Link href="/dashboard" className="flex items-center gap-2"><VouchlyLogo className="h-6 w-6 text-blue-600" /><span className="text-xl font-semibold tracking-tight text-gray-900">Vouchly</span></Link>
+                    </div>
+                    <div className="flex items-center gap-4 ml-auto">
+                        <NotificationBell />
+                    </div>
                 </header>
                 <main className="flex-1 overflow-auto w-full">
                     <div className="max-w-7xl mx-auto p-4 md:p-6 w-full">
                         {children}
                     </div>
                 </main>
+                {/* REMOVE the <Footer /> from the dashboard layout, so only the global footer is used. */}
 
                 {isMobileMenuOpen && (
                     <div className="fixed inset-0 z-50 sm:hidden">

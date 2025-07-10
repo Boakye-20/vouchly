@@ -9,10 +9,15 @@ export default function HomePage() {
             <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="h-16 flex items-center justify-between">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <VouchlyLogo className="h-8 w-8 text-blue-600" />
-                            <span className="text-xl font-semibold tracking-tight">Vouchly</span>
-                        </Link>
+                        <div className="flex items-center space-x-8">
+                            <Link href="/" className="flex items-center space-x-2">
+                                <VouchlyLogo className="h-8 w-8 text-blue-600" />
+                                <span className="text-xl font-semibold tracking-tight">Vouchly</span>
+                            </Link>
+                            <Link href="/how-it-works" className="text-gray-600 hover:text-gray-900 text-base transition-colors">How it Works</Link>
+                            <Link href="/features" className="text-gray-600 hover:text-gray-900 text-base transition-colors">Features</Link>
+                            <Link href="/contact" className="text-gray-600 hover:text-gray-900 text-base transition-colors">Contact Us</Link>
+                        </div>
                         <div className="flex items-center space-x-8">
                             <Link href="/auth" className="text-gray-600 hover:text-gray-900 text-base transition-colors">
                                 Log In
@@ -323,8 +328,8 @@ export default function HomePage() {
                             <p className="text-lg text-gray-600 mb-4">
                                 No more "send me the link" messages. Click join and you're in. Camera preferences respected.
                             </p>
-                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
-                                Learn more →
+                            <Link href="/features" className="text-blue-600 hover:text-blue-700 text-base font-medium" aria-label="Learn more about built-in video sessions">
+                                Learn more about this feature →
                             </Link>
                         </div>
                         <div className="bg-white p-8 rounded-lg">
@@ -332,8 +337,8 @@ export default function HomePage() {
                             <p className="text-lg text-gray-600 mb-4">
                                 Sessions lock 4 hours before start. Reschedule early or commit. No last-minute flaking.
                             </p>
-                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
-                                Learn more →
+                            <Link href="/features" className="text-blue-600 hover:text-blue-700 text-base font-medium" aria-label="Learn more about the 4-hour lock rule">
+                                Learn more about this feature →
                             </Link>
                         </div>
                         <div className="bg-white p-8 rounded-lg">
@@ -341,8 +346,8 @@ export default function HomePage() {
                             <p className="text-lg text-gray-600 mb-4">
                                 See your study streaks, weekly goals, and Vouch Score history. Stay motivated!
                             </p>
-                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
-                                Learn more →
+                            <Link href="/features" className="text-blue-600 hover:text-blue-700 text-base font-medium" aria-label="Learn more about progress tracking">
+                                Learn more about this feature →
                             </Link>
                         </div>
                         <div className="bg-white p-8 rounded-lg">
@@ -350,8 +355,8 @@ export default function HomePage() {
                             <p className="text-lg text-gray-600 mb-4">
                                 Filter by uni, subject, year, Vouch Score, study style. Find your perfect match.
                             </p>
-                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
-                                Learn more →
+                            <Link href="/features" className="text-blue-600 hover:text-blue-700 text-base font-medium" aria-label="Learn more about smart filtering">
+                                Learn more about this feature →
                             </Link>
                         </div>
                         <div className="bg-white p-8 rounded-lg">
@@ -359,8 +364,8 @@ export default function HomePage() {
                             <p className="text-lg text-gray-600 mb-4">
                                 Calendar sync, 10-min warnings, completion prompts. Never miss a session.
                             </p>
-                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
-                                Learn more →
+                            <Link href="/features" className="text-blue-600 hover:text-blue-700 text-base font-medium" aria-label="Learn more about smart reminders">
+                                Learn more about this feature →
                             </Link>
                         </div>
                         <div className="bg-white p-8 rounded-lg">
@@ -368,8 +373,8 @@ export default function HomePage() {
                             <p className="text-lg text-gray-600 mb-4">
                                 Silent focus, quiet co-working, or motivational. Match your vibe.
                             </p>
-                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
-                                Learn more →
+                            <Link href="/features" className="text-blue-600 hover:text-blue-700 text-base font-medium" aria-label="Learn more about study styles">
+                                Learn more about this feature →
                             </Link>
                         </div>
                     </div>
