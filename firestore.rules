@@ -2,66 +2,53 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // --- USERS Collection ---
+    // Allow users to read/write their own user document
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isOwner(userId);
-      // Only allow updating vouchScore if it is not being changed by the client
-      allow update: if isOwner(userId) && 
-        (!('vouchScore' in request.resource.data) || request.resource.data.vouchScore == resource.data.vouchScore);
-      
-      // --- Subcollections ---
-      match /vouchHistory/{historyId} {
-        allow create: if isOwner(userId);
-        // Temporarily allow all reads for debugging permission errors
-        allow read: if true; 
-      }
-      match /notifications/{notificationId} {
-        allow read, update, delete: if isOwner(userId);
-        allow create: if isAuthenticated();
-      }
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
     }
 
-    // --- SESSIONS Collection ---
+    // Sessions collection rules
     match /sessions/{sessionId} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
-      allow create: if isAuthenticated() && request.resource.data.initiatorId == request.auth.uid && request.auth.uid in request.resource.data.participantIds;
+      // Allow read if user is a participant
+      allow read: if request.auth != null && 
+        (resource.data.participantIds.hasAny([request.auth.uid]) || 
+         request.auth.token.admin == true);
       
-      // --- Double-booking prevention on update to blocking status ---
-      function isBlockingStatus(status) {
-        return status in ['scheduled', 'in_progress', 'accepted', 'ongoing'];
-      }
-      function sessionOverlaps(userId, start, duration, excludeId) {
-        // Query up to 10 sessions for this user with blocking status overlapping the given time
-        return count(
-          get(/databases/$(database)/documents/sessions)
-            .where('participantIds', 'array-contains', userId)
-            .where('status', 'in', ['scheduled', 'in_progress', 'accepted', 'ongoing'])
-            .where('scheduledStartTime', '>=', start - duration * 60 * 1000 - 15 * 60 * 1000) // buffer before
-            .where('scheduledStartTime', '<=', start + duration * 60 * 1000 + 15 * 60 * 1000) // buffer after
-        .docs().filter(s => s.id != excludeId)) > 0;
-      }
-      allow update: if isAuthenticated() &&
-        (resource.data.initiatorId == request.auth.uid || resource.data.recipientId == request.auth.uid) &&
-        (
-          // If status is NOT changing to a blocking status, allow
-          !(isBlockingStatus(request.resource.data.status) && !isBlockingStatus(resource.data.status)) ||
-          // If status IS changing to a blocking status, block if user has another overlapping session
-          !sessionOverlaps(request.resource.data.initiatorId, request.resource.data.scheduledStartTime, request.resource.data.durationMinutes, sessionId) &&
-          !sessionOverlaps(request.resource.data.recipientId, request.resource.data.scheduledStartTime, request.resource.data.durationMinutes, sessionId)
-        );
+      // Allow create/update if user is a participant or admin
+      allow create: if request.auth != null && 
+        (request.resource.data.participantIds.hasAny([request.auth.uid]) || 
+         request.auth.token.admin == true);
       
-      match /messages/{messageId} {
-        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/sessions/$(sessionId)).data.participantIds;
-        allow create: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/sessions/$(sessionId)).data.participantIds && request.resource.data.senderId == request.auth.uid;
-      }
+      allow update: if request.auth != null && 
+        (resource.data.participantIds.hasAny([request.auth.uid]) || 
+         request.auth.token.admin == true);
+      
+      // Only allow deletion by admins
+      allow delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Messages subcollection
+    match /sessions/{sessionId}/messages/{messageId} {
+      allow read: if request.auth != null && 
+        (get(/databases/$(database)/documents/sessions/$(sessionId)).data.participantIds.hasAny([request.auth.uid]) ||
+         request.auth.token.admin == true);
+      
+      allow create: if request.auth != null && 
+        request.resource.data.senderId == request.auth.uid &&
+        get(/databases/$(database)/documents/sessions/$(sessionId)).data.participantIds.hasAny([request.auth.uid]);
+    }
+
+    // User notifications
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && 
+        (request.resource.data.userId == userId || request.auth.token.admin == true);
+    }
+
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

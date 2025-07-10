@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, Timestamp, orderBy, limit, startAfter, getDocs, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { format, formatDistanceToNow } from 'date-fns';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquareText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquareText, Paperclip, Image, File } from "lucide-react";
 
 // You can move this to a central lib/types.ts file
 interface Conversation {
@@ -21,13 +22,18 @@ interface Conversation {
     lastMessage: {
         text: string;
         timestamp: Date | null;
+        hasAttachments?: boolean;
+        attachmentCount?: number;
     };
+    unreadCount?: number;
 }
 
 export default function MessagesPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<{ uid: string } | null>(null);
+    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, user => {
@@ -42,92 +48,176 @@ export default function MessagesPage() {
             return;
         };
 
-        // Query for sessions that are active (scheduled or in-progress)
-        const q = query(
-            collection(db, 'sessions'),
-            where('participantIds', 'array-contains', currentUser.uid),
-            where('status', 'in', ['scheduled', 'in_progress'])
-        );
+        // Initial fetch
+        const fetchConversations = async () => {
+            setLoading(true);
+            try {
+                const q = query(
+                    collection(db, 'sessions'),
+                    where('participantIds', 'array-contains', currentUser.uid),
+                    where('status', 'in', ['scheduled', 'in_progress']),
+                    orderBy('lastMessageTime', 'desc'),
+                    limit(20)
+                );
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const partnerId = data.initiatorId === currentUser.uid ? data.recipientId : data.initiatorId;
+                    const partnerInfo = data.participants?.[partnerId] || {};
+                    const lastMessageTimestamp = (data.lastMessage?.createdAt as Timestamp)?.toDate() || null;
+                    const lastMessage = data.lastMessage || {};
+                    const hasAttachments = lastMessage.attachments && lastMessage.attachments.length > 0;
+                    const attachmentCount = hasAttachments ? lastMessage.attachments.length : 0;
+                    return {
+                        sessionId: doc.id,
+                        partnerName: partnerInfo.name || "Study Partner",
+                        partnerAvatar: `https://ui-avatars.com/api/?name=${(partnerInfo.name || 'S').replace(' ', '+')}`,
+                        sessionTopic: data.focusTopic || 'General Study',
+                        lastMessage: {
+                            text: lastMessage.text || "No messages yet.",
+                            timestamp: lastMessageTimestamp,
+                            hasAttachments,
+                            attachmentCount
+                        },
+                        unreadCount: data.unreadCount?.[currentUser.uid] || 0
+                    };
+                });
+                setConversations(data);
+                setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+                setHasMore(snapshot.docs.length === 20);
+            } catch (error) {
+                console.error('Error fetching conversations:', error);
+                setConversations([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchConversations();
+    }, [currentUser]);
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const fetchedConversations = querySnapshot.docs.map(doc => {
+    // Load more conversations
+    const loadMoreConversations = async () => {
+        if (!currentUser || !lastDoc) return;
+        setLoading(true);
+        try {
+            const q = query(
+                collection(db, 'sessions'),
+                where('participantIds', 'array-contains', currentUser.uid),
+                where('status', 'in', ['scheduled', 'in_progress']),
+                orderBy('lastMessageTime', 'desc'),
+                startAfter(lastDoc),
+                limit(20)
+            );
+            const snapshot = await getDocs(q);
+            const data = snapshot.docs.map(doc => {
                 const data = doc.data();
                 const partnerId = data.initiatorId === currentUser.uid ? data.recipientId : data.initiatorId;
                 const partnerInfo = data.participants?.[partnerId] || {};
-
-                // This assumes you store a `lastMessage` object on the session doc for previews.
-                // This is a common and efficient practice called denormalization.
                 const lastMessageTimestamp = (data.lastMessage?.createdAt as Timestamp)?.toDate() || null;
-
+                const lastMessage = data.lastMessage || {};
+                const hasAttachments = lastMessage.attachments && lastMessage.attachments.length > 0;
+                const attachmentCount = hasAttachments ? lastMessage.attachments.length : 0;
                 return {
                     sessionId: doc.id,
                     partnerName: partnerInfo.name || "Study Partner",
                     partnerAvatar: `https://ui-avatars.com/api/?name=${(partnerInfo.name || 'S').replace(' ', '+')}`,
                     sessionTopic: data.focusTopic || 'General Study',
                     lastMessage: {
-                        text: data.lastMessage?.text || "No messages yet.",
-                        timestamp: lastMessageTimestamp
-                    }
+                        text: lastMessage.text || "No messages yet.",
+                        timestamp: lastMessageTimestamp,
+                        hasAttachments,
+                        attachmentCount
+                    },
+                    unreadCount: data.unreadCount?.[currentUser.uid] || 0
                 };
             });
-            setConversations(fetchedConversations);
+            setConversations(prev => [...prev, ...data]);
+            setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+            setHasMore(snapshot.docs.length === 20);
+        } catch (error) {
+            console.error('Error loading more conversations:', error);
+        } finally {
             setLoading(false);
-        });
+        }
+    };
 
-        return () => unsubscribe();
-    }, [currentUser]);
+    const getMessagePreview = (conversation: Conversation) => {
+        if (conversation.lastMessage.hasAttachments) {
+            const attachmentText = conversation.lastMessage.attachmentCount === 1
+                ? "1 attachment"
+                : `${conversation.lastMessage.attachmentCount} attachments`;
+            return conversation.lastMessage.text
+                ? `${conversation.lastMessage.text} • ${attachmentText}`
+                : attachmentText;
+        }
+        return conversation.lastMessage.text;
+    };
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-headline font-bold">Messages</h1>
-                <p className="text-muted-foreground">
-                    View your conversations for scheduled sessions.
-                </p>
+        <div className="space-y-8 p-6">
+            <div className="text-center">
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">Messages</h1>
+                <p className="text-xl text-gray-600 mt-4">View your conversations for scheduled sessions.</p>
             </div>
 
             {loading ? (
-                <div className="space-y-3">
-                    <Skeleton className="h-20 w-full" />
-                    <Skeleton className="h-20 w-full" />
-                    <Skeleton className="h-20 w-full" />
+                <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 h-20 animate-pulse"></div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 h-20 animate-pulse"></div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 h-20 animate-pulse"></div>
                 </div>
             ) : conversations.length > 0 ? (
-                <Card>
-                    <CardContent className="p-0">
-                        <div className="space-y-1">
-                            {conversations.map(convo => (
-                                <Link href={`/dashboard/messages/${convo.sessionId}`} key={convo.sessionId}>
-                                    <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer border-b">
+                <div className="bg-white rounded-lg border border-gray-200">
+                    <div className="space-y-1">
+                        {conversations.map(convo => (
+                            <Link href={`/dashboard/messages/${convo.sessionId}`} key={convo.sessionId}>
+                                <div className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-200 relative">
+                                    <div className="relative">
                                         <Avatar className="h-12 w-12">
                                             <AvatarImage src={convo.partnerAvatar} />
                                             <AvatarFallback>{convo.partnerName.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <div className="flex-1 truncate">
-                                            <p className="font-semibold">{convo.partnerName}</p>
-                                            <p className="text-sm text-muted-foreground truncate">{convo.lastMessage.text}</p>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground text-right">
-                                            <p className="font-medium">{convo.sessionTopic}</p>
-                                            {convo.lastMessage.timestamp && (
-                                                <p>{formatDistanceToNow(convo.lastMessage.timestamp, { addSuffix: true })}</p>
+                                        {(convo.unreadCount || 0) > 0 && (
+                                            <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 flex items-center justify-center text-xs text-white">
+                                                {(convo.unreadCount || 0) > 9 ? '9+' : (convo.unreadCount || 0)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 truncate">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-medium text-gray-900">{convo.partnerName}</p>
+                                            {convo.lastMessage.hasAttachments && (
+                                                <Paperclip className="h-3 w-3 text-gray-400" />
                                             )}
                                         </div>
+                                        <p className={`text-sm truncate ${(convo.unreadCount || 0) > 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+                                            {getMessagePreview(convo)}
+                                        </p>
                                     </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+                                    <div className="text-xs text-gray-500 text-right">
+                                        <p className="font-medium text-gray-700">{convo.sessionTopic}</p>
+                                        {convo.lastMessage.timestamp && (
+                                            <p>{formatDistanceToNow(convo.lastMessage.timestamp, { addSuffix: true })}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
             ) : (
-                <div className="text-center py-20 bg-slate-50 rounded-lg">
+                <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
                     <MessageSquareText className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-lg font-medium">No active conversations</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">No active conversations</h3>
+                    <p className="mt-1 text-sm text-gray-600">
                         When a study session is scheduled, your chat with the partner will appear here.
                     </p>
                 </div>
             )}
+            {hasMore && !loading && (
+                <button onClick={loadMoreConversations} className="mt-4 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-base font-medium transition-colors">Load More</button>
+            )}
+            {loading && <div className="mt-4 text-center text-gray-600">Loading...</div>}
         </div>
     );
 }

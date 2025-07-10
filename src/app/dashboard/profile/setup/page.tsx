@@ -125,7 +125,21 @@ interface SetupData {
     subject: string;
 }
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+// Change DAYS to full names
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+function normalizeAvailability(availability: { morning: string[]; afternoon: string[]; evening: string[] }) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const result: Record<string, { morning: boolean; afternoon: boolean; evening: boolean }> = {};
+    days.forEach(day => {
+        result[day] = {
+            morning: availability.morning.includes(day),
+            afternoon: availability.afternoon.includes(day),
+            evening: availability.evening.includes(day),
+        };
+    });
+    return result;
+}
 
 export default function ProfileSetupPage() {
     const router = useRouter();
@@ -162,6 +176,7 @@ export default function ProfileSetupPage() {
         return () => unsubscribe();
     }, [router]);
 
+    // Update toggleAvailability to use full day names
     const toggleAvailability = (period: 'morning' | 'afternoon' | 'evening', day: string) => {
         setSetupData(prev => {
             const currentDays = prev.availability[period];
@@ -181,7 +196,13 @@ export default function ProfileSetupPage() {
         setSaving(true);
         try {
             await updateDoc(doc(db, 'users', userId), {
-                ...setupData,
+                faculty: setupData.faculty,
+                subject: setupData.subject,
+                bio: setupData.bio,
+                weeklySessionGoal: setupData.weeklyGoal,
+                availability: normalizeAvailability(setupData.availability),
+                coStudyingAtmosphere: setupData.coStudyingAtmosphere,
+                cameraPreference: setupData.cameraPreference,
                 profileComplete: true,
                 updatedAt: new Date()
             });
@@ -194,17 +215,20 @@ export default function ProfileSetupPage() {
         }
     };
 
+    const countSelectedSlots = () => {
+        return setupData.availability.morning.length +
+            setupData.availability.afternoon.length +
+            setupData.availability.evening.length;
+    };
+
     const canProceed = () => {
         switch (currentStep) {
             case 1:
-                return setupData.availability.morning.length > 0 ||
-                    setupData.availability.afternoon.length > 0 ||
-                    setupData.availability.evening.length > 0;
-            case 2:
-                return setupData.coStudyingAtmosphere !== '' && setupData.cameraPreference !== '';
-            // --- REFINEMENT: Validate step 3 before allowing completion ---
-            case 3:
                 return setupData.faculty !== '' && setupData.subject !== '';
+            case 2:
+                return countSelectedSlots() >= 3;
+            case 3:
+                return true; // Preferences are optional
             default:
                 return false;
         }
@@ -225,59 +249,18 @@ export default function ProfileSetupPage() {
                         <span className="text-sm text-gray-600">Step {currentStep} of 3</span>
                     </div>
                     <CardTitle>
-                        {currentStep === 1 && "When are you free to study?"}
-                        {currentStep === 2 && "Your study preferences"}
-                        {currentStep === 3 && "Almost done!"}
+                        {currentStep === 1 && "Add your academic details"}
+                        {currentStep === 2 && "When are you free to study?"}
+                        {currentStep === 3 && "Your study preferences"}
                     </CardTitle>
                     <CardDescription>
-                        {currentStep === 1 && "Select all times you're usually available for co-studying sessions"}
-                        {currentStep === 2 && "Help us match you with compatible study partners"}
-                        {currentStep === 3 && "Add your academic details to complete your profile"}
+                        {currentStep === 1 && "Tell us about your course and subject to help us match you with relevant partners."}
+                        {currentStep === 2 && "Select all times you're usually available for co-studying sessions."}
+                        {currentStep === 3 && "Help us match you with compatible study partners. Preferences are optional."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {currentStep === 1 && (
-                        <div className="space-y-6">
-                            {(['morning', 'afternoon', 'evening'] as const).map((period) => (
-                                <div key={period} className="space-y-3">
-                                    <Label className="text-base font-semibold">
-                                        {period === 'morning' && '🌅 Morning (9am-12pm)'}
-                                        {period === 'afternoon' && '☀️ Afternoon (12pm-5pm)'}
-                                        {period === 'evening' && '🌙 Evening (5pm-9pm)'}
-                                    </Label>
-                                    <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-                                        {DAYS.map((day) => (<button key={day} type="button" onClick={() => toggleAvailability(period, day)} className={`p-2 text-sm rounded-lg border transition-all ${setupData.availability[period].includes(day) ? 'bg-primary text-white border-primary' : 'bg-white hover:border-gray-400'}`}>{day}</button>))}
-                                    </div>
-                                </div>
-                            ))}
-                            {!canProceed() && <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">⚠️ Please select at least one time slot to continue</p>}
-                        </div>
-                    )}
-
-                    {/* --- RE-INTEGRATED: Full code for Step 2 --- */}
-                    {currentStep === 2 && (
-                        <div className="space-y-8">
-                            <div>
-                                <Label className="text-base font-semibold mb-3 block">Preferred co-studying atmosphere</Label>
-                                <RadioGroup value={setupData.coStudyingAtmosphere} onValueChange={(value) => setSetupData(prev => ({ ...prev, coStudyingAtmosphere: value }))} className="space-y-3">
-                                    <Label className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Silent & Independent" /><div className="flex-1"><p className="font-medium">🤫 Silent & Independent</p><p className="text-sm text-gray-600 mt-1">Pure focus mode. No interaction except start/end check-ins.</p></div></Label>
-                                    <Label className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Quietly Co-working" /><div className="flex-1"><p className="font-medium">🤝 Quietly Co-working</p><p className="text-sm text-gray-600 mt-1">Mostly quiet with occasional check-ins or quick questions.</p></div></Label>
-                                    <Label className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Motivational & Social" /><div className="flex-1"><p className="font-medium">💬 Motivational & Social</p><p className="text-sm text-gray-600 mt-1">Light chat welcome. Share progress and encourage each other.</p></div></Label>
-                                </RadioGroup>
-                            </div>
-                            <div>
-                                <Label className="text-base font-semibold mb-3 block">Camera preference during sessions</Label>
-                                <RadioGroup value={setupData.cameraPreference} onValueChange={(value) => setSetupData(prev => ({ ...prev, cameraPreference: value }))} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <Label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Camera always on" /><span>📹 Camera always on</span></Label>
-                                    <Label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Camera on for check-ins" /><span>📷 Camera for check-ins</span></Label>
-                                    <Label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Camera always off" /><span>🚫 Camera always off</span></Label>
-                                    <Label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 has-[input:checked]:bg-primary/10 has-[input:checked]:border-primary"><RadioGroupItem value="Flexible" /><span>🤷 Flexible</span></Label>
-                                </RadioGroup>
-                            </div>
-                        </div>
-                    )}
-
-                    {currentStep === 3 && (
                         <div className="space-y-6">
                             <div>
                                 <h3 className="text-base font-semibold mb-3">Academic Information</h3>
@@ -306,6 +289,105 @@ export default function ProfileSetupPage() {
                             <div>
                                 <Label className="text-base font-semibold mb-2 block">Weekly session goal</Label>
                                 <div className="flex items-center space-x-4"><Button type="button" variant="outline" size="icon" onClick={() => setSetupData(p => ({ ...p, weeklyGoal: Math.max(1, p.weeklyGoal - 1) }))}>-</Button><span className="text-xl font-bold w-10 text-center">{setupData.weeklyGoal}</span><Button type="button" variant="outline" size="icon" onClick={() => setSetupData(p => ({ ...p, weeklyGoal: Math.min(20, p.weeklyGoal + 1) }))}>+</Button><span className="text-sm text-muted-foreground">sessions per week</span></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {currentStep === 2 && (
+                        <div className="space-y-6">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr>
+                                            <th className="text-left p-2 text-lg font-bold">Day</th>
+                                            <th className="text-center p-2 text-lg font-bold">Morning<br /><span className="text-base font-normal">9am-12pm</span></th>
+                                            <th className="text-center p-2 text-lg font-bold">Afternoon<br /><span className="text-base font-normal">12pm-5pm</span></th>
+                                            <th className="text-center p-2 text-lg font-bold">Evening<br /><span className="text-base font-normal">5pm-9pm</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {DAYS.map(day => (
+                                            <tr key={day} className="border-t">
+                                                <td className="p-2 font-medium">{day}</td>
+                                                {(['morning', 'afternoon', 'evening'] as const).map((time) => (
+                                                    <td key={time} className="text-center p-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleAvailability(time, day)}
+                                                            className={`w-16 h-8 rounded-md transition-colors ${setupData.availability[time].includes(day)
+                                                                ? 'bg-purple-600 text-white'
+                                                                : 'bg-gray-100 hover:bg-gray-200'} text-sm font-bold capitalize`}
+                                                        >
+                                                            {setupData.availability[time].includes(day) ? '✓' : ''}
+                                                        </button>
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {countSelectedSlots() < 3 && (
+                                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+                                    ⚠️ Please select at least <b>3</b> time slots to continue
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {currentStep === 3 && (
+                        <div className="space-y-8">
+                            <div>
+                                <Label className="text-base font-semibold mb-3 block">Preferred co-studying atmosphere</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {["Silent & Independent", "Quietly Co-working", "Motivational & Social"].map((option) => (
+                                        <button
+                                            key={option}
+                                            type="button"
+                                            className={`flex flex-col items-start p-4 border rounded-lg cursor-pointer transition-all
+                                                ${setupData.coStudyingAtmosphere === option ? 'bg-primary/10 border-primary ring-2 ring-primary' : 'bg-white hover:border-gray-400'}`}
+                                            onClick={() => setSetupData({
+                                                ...setupData,
+                                                coStudyingAtmosphere: setupData.coStudyingAtmosphere === option ? '' : option,
+                                            })}
+                                        >
+                                            <span className="font-medium">
+                                                {option === 'Silent & Independent' && '🤫 Silent & Independent'}
+                                                {option === 'Quietly Co-working' && '🤝 Quietly Co-working'}
+                                                {option === 'Motivational & Social' && '💬 Motivational & Social'}
+                                            </span>
+                                            <span className="text-sm text-gray-600 mt-1">
+                                                {option === 'Silent & Independent' && 'Pure focus mode. No interaction except start/end check-ins.'}
+                                                {option === 'Quietly Co-working' && 'Mostly quiet with occasional check-ins or quick questions.'}
+                                                {option === 'Motivational & Social' && 'Light chat welcome. Share progress and encourage each other.'}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-base font-semibold mb-3 block">Camera preference during sessions</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {["Camera always on", "Camera for check-ins", "Camera always off", "Flexible"].map((option) => (
+                                        <button
+                                            key={option}
+                                            type="button"
+                                            className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all
+                                                ${setupData.cameraPreference === option ? 'bg-primary/10 border-primary ring-2 ring-primary' : 'bg-white hover:border-gray-400'}`}
+                                            onClick={() => setSetupData({
+                                                ...setupData,
+                                                cameraPreference: setupData.cameraPreference === option ? '' : option,
+                                            })}
+                                        >
+                                            <span>
+                                                {option === 'Camera always on' && '📹 Camera always on'}
+                                                {option === 'Camera for check-ins' && '📷 Camera for check-ins'}
+                                                {option === 'Camera always off' && '🚫 Camera always off'}
+                                                {option === 'Flexible' && '🤷 Flexible'}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}

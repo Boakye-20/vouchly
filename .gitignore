@@ -43,3 +43,13 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+# Sentry Config File
+.env.sentry-build-plugin
+
+# Firebase service account keys 
+*.json
+!firebase.json  # Keep this file
+firebase-*.json
+service-account-key*.json
+
+node_modules

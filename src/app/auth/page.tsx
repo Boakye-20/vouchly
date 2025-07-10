@@ -15,24 +15,24 @@ import Link from 'next/link';
 
 export default function AuthenticationPage() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
             <Link href="/" className="flex items-center space-x-2 mb-8">
-                <VouchlyLogo className="h-10 w-10 text-primary" />
-                <h1 className="text-3xl font-bold font-headline text-gray-800">Vouchly</h1>
+                <VouchlyLogo className="h-10 w-10 text-blue-600" />
+                <h1 className="text-3xl font-light font-headline text-gray-900 tracking-tight">Vouchly</h1>
             </Link>
 
             <Tabs defaultValue="login" className="w-full max-w-md">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="login">Log In</TabsTrigger>
-                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-lg mb-2">
+                    <TabsTrigger value="login" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-700 font-medium">Log In</TabsTrigger>
+                    <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-700 font-medium">Sign Up</TabsTrigger>
                 </TabsList>
 
                 {/* Login Tab Content */}
                 <TabsContent value="login">
-                    <Card className="shadow-lg">
+                    <Card className="border border-gray-200 bg-white">
                         <CardHeader className="text-center">
-                            <CardTitle className="text-2xl">Welcome Back!</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-2xl font-light text-gray-900">Welcome Back!</CardTitle>
+                            <CardDescription className="text-gray-600">
                                 Log in to find your study partner and get to work.
                             </CardDescription>
                         </CardHeader>
@@ -44,11 +44,11 @@ export default function AuthenticationPage() {
 
                 {/* Signup Tab Content */}
                 <TabsContent value="signup">
-                    <Card className="shadow-lg">
+                    <Card className="border border-gray-200 bg-white">
                         <CardHeader className="text-center">
-                            <CardTitle className="text-2xl">Create an Account</CardTitle>
-                            <CardDescription>
-                                Join thousands of UK students on Vouchly. It's free!
+                            <CardTitle className="text-2xl font-light text-gray-900">Create an Account</CardTitle>
+                            <CardDescription className="text-gray-600">
+                                Join thousands of UK students on Vouchly. It is free!
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -57,8 +57,8 @@ export default function AuthenticationPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
-            <p className="text-center text-sm text-gray-600 mt-6">
-                By continuing, you agree to Vouchly's <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
+            <p className="text-center text-sm text-gray-500 mt-6">
+                By continuing, you agree to Vouchly's <Link href="/terms" className="underline hover:text-blue-600">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-blue-600">Privacy Policy</Link>.
             </p>
         </div>
     );

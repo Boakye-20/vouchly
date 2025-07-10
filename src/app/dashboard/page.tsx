@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, limit, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 // --- NEW: More icons for new stats and elements ---
-import { ArrowRight, BookOpen, Users, BarChart3, MessageSquare, Award, Flame, Clock, Lightbulb } from 'lucide-react';
+import { ArrowRight, BookOpen, Users, BarChart3, MessageSquare, Award, Flame, Clock, Lightbulb, Calendar, CheckCircle, TrendingUp, Target } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 // --- NEW: Helper function for dynamic greeting ---
@@ -37,6 +37,8 @@ export default function DashboardPage() {
     const [incomingRequest, setIncomingRequest] = useState<any>(null);
     // --- NEW: State for a random tip ---
     const [tip, setTip] = useState('');
+    // --- NEW: State for online users count ---
+    const [onlineUsersCount, setOnlineUsersCount] = useState(0);
 
     useEffect(() => {
         // --- NEW: Select a random tip on component mount ---
@@ -62,7 +64,40 @@ export default function DashboardPage() {
                 const unsubscribeRequests = onSnapshot(requestQuery, (snapshot) => {
                     setIncomingRequest(snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
                 });
-                return () => { unsubscribeUser(); unsubscribeSessions(); unsubscribeRequests(); };
+
+                // --- NEW: Track online users count ---
+                const onlineUsersQuery = query(
+                    collection(db, 'users'),
+                    where('lastSeen', '>=', new Date(Date.now() - 5 * 60 * 1000)) // Users active in last 5 minutes
+                );
+                const unsubscribeOnlineUsers = onSnapshot(onlineUsersQuery, (snapshot) => {
+                    setOnlineUsersCount(snapshot.size);
+                });
+
+                // --- NEW: Update user's lastSeen timestamp periodically ---
+                const updateLastSeen = async () => {
+                    try {
+                        await updateDoc(userDocRef, {
+                            lastSeen: new Date()
+                        });
+                    } catch (error) {
+                        console.error('Failed to update lastSeen:', error);
+                    }
+                };
+
+                // Update lastSeen every 2 minutes while user is active
+                const lastSeenInterval = setInterval(updateLastSeen, 2 * 60 * 1000);
+
+                // Initial update
+                updateLastSeen();
+
+                return () => {
+                    unsubscribeUser();
+                    unsubscribeSessions();
+                    unsubscribeRequests();
+                    unsubscribeOnlineUsers();
+                    clearInterval(lastSeenInterval);
+                };
             } else { setLoading(false); }
         });
         return () => unsubscribeAuth();
@@ -72,39 +107,75 @@ export default function DashboardPage() {
         if (nextSession) {
             const partnerName = nextSession.participants?.[nextSession.initiatorId === user.uid ? nextSession.recipientId : nextSession.initiatorId]?.name || 'your partner';
             return (
-                <Card className="bg-primary/5 border-primary/20 shadow-lg">
-                    <CardHeader><CardTitle className="text-2xl">Up Next: Your Session is Soon!</CardTitle><CardDescription>Your session with <span className="font-bold text-primary">{partnerName}</span> is {formatDistanceToNow(nextSession.scheduledStartTime.toDate(), { addSuffix: true })}.</CardDescription></CardHeader>
-                    <CardContent><Link href="/dashboard/sessions"><Button className="w-full">View Session Details <ArrowRight className="ml-2 h-4 w-4" /></Button></Link></CardContent>
-                </Card>
+                <div className="bg-white p-8 rounded-lg border border-gray-200">
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-medium text-gray-900 mb-2">Up Next: Your Session is Soon!</h2>
+                        <p className="text-lg text-gray-600">Your session with <span className="font-medium text-gray-900">{partnerName}</span> is {formatDistanceToNow(nextSession.scheduledStartTime.toDate(), { addSuffix: true })}.</p>
+                    </div>
+                    <div className="flex justify-center">
+                        <Link href="/dashboard/sessions">
+                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors flex items-center">
+                                View Session Details <ArrowRight className="ml-2 h-4 w-4" />
+                            </button>
+                        </Link>
+                    </div>
+                </div>
             );
         }
         if (incomingRequest) {
             const partnerName = incomingRequest.participants?.[incomingRequest.senderId]?.name || 'a partner';
             return (
-                <Card className="bg-amber-500/5 border-amber-500/20 shadow-lg">
-                    <CardHeader><CardTitle className="text-2xl">You Have a New Request!</CardTitle><CardDescription><span className="font-bold text-amber-600">{partnerName}</span> wants to start a study session with you.</CardDescription></CardHeader>
-                    <CardContent><Link href="/dashboard/sessions"><Button variant="outline" className="w-full">Review Request <ArrowRight className="ml-2 h-4 w-4" /></Button></Link></CardContent>
-                </Card>
+                <div className="bg-white p-8 rounded-lg border border-gray-200">
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-medium text-gray-900 mb-2">You Have a New Request!</h2>
+                        <p className="text-lg text-gray-600"><span className="font-medium text-gray-900">{partnerName}</span> wants to start a study session with you.</p>
+                    </div>
+                    <div className="flex justify-center">
+                        <Link href="/dashboard/sessions">
+                            <button className="border border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-4 rounded-lg text-lg font-medium transition-colors flex items-center">
+                                Review Request <ArrowRight className="ml-2 h-4 w-4" />
+                            </button>
+                        </Link>
+                    </div>
+                </div>
             );
         }
         return (
-            <Card className="bg-card shadow-lg">
-                <CardHeader><CardTitle className="text-2xl">Ready for your next session?</CardTitle><CardDescription>Find a reliable partner and boost your productivity today.</CardDescription></CardHeader>
-                <CardContent><Link href="/dashboard/browse"><Button className="w-full">Browse Partners <ArrowRight className="ml-2 h-4 w-4" /></Button></Link></CardContent>
-            </Card>
+            <div className="bg-white p-8 rounded-lg border border-gray-200">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-medium text-gray-900 mb-2">Ready for your next session?</h2>
+                    <p className="text-lg text-gray-600">Find a reliable partner and boost your productivity today.</p>
+                </div>
+                <div className="flex justify-center">
+                    <Link href="/dashboard/browse">
+                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors flex items-center">
+                            Browse Partners <ArrowRight className="ml-2 h-4 w-4" />
+                        </button>
+                    </Link>
+                </div>
+            </div>
         );
     };
 
     if (loading) {
         return (
-            <div className="p-8 space-y-8">
-                <Skeleton className="h-12 w-1/3" />
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8"><div className="lg:col-span-2 space-y-8"><Skeleton className="h-48 w-full" /><Skeleton className="h-32 w-full" /></div><div className="space-y-8"><Skeleton className="h-48 w-full" /><Skeleton className="h-48 w-full" /></div></div>
+            <div className="max-w-7xl mx-auto px-6 py-16 space-y-12">
+                <div className="h-12 w-1/3 bg-gray-200 rounded animate-pulse" />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-8">
+                        <div className="h-48 w-full bg-gray-200 rounded-lg animate-pulse" />
+                        <div className="h-32 w-full bg-gray-200 rounded-lg animate-pulse" />
+                    </div>
+                    <div className="space-y-8">
+                        <div className="h-48 w-full bg-gray-200 rounded-lg animate-pulse" />
+                        <div className="h-48 w-full bg-gray-200 rounded-lg animate-pulse" />
+                    </div>
+                </div>
             </div>
         );
     }
 
-    if (!user) return <div className="p-8 text-center">Please log in to view your dashboard.</div>;
+    if (!user) return <div className="max-w-7xl mx-auto px-6 py-16 text-center text-gray-600">Please log in to view your dashboard.</div>;
 
     const vouchScore = user.vouchScore || 80;
     const weeklyGoal = user.weeklyGoal || 5;
@@ -114,68 +185,89 @@ export default function DashboardPage() {
     const hoursFocused = Math.round(totalSessions * 1.5); // Assuming average session is 90 mins
 
     return (
-        <div className="p-4 md:p-8 space-y-8">
-            <div>
-                {/* --- UPDATED: Dynamic greeting --- */}
-                <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {user.name?.split(' ')[0] || 'Student'}!</h1>
-                <p className="text-muted-foreground">Here’s what’s happening with your study sessions today.</p>
+        <div className="max-w-7xl mx-auto px-6 py-16 space-y-12">
+            <div className="text-center">
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 flex items-center justify-center gap-3">
+                    <BarChart3 className="h-8 w-8 text-blue-600" />
+                    {getGreeting()}, {user.name?.split(' ')[0] || 'Student'}!
+                </h1>
+                <p className="text-xl text-gray-600 mt-4">Here's what's happening with your study sessions today.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <UpNextCard />
-                    <Card>
-                        <CardHeader><CardTitle>Weekly Goal Progress</CardTitle><CardDescription>You've completed {sessionsThisWeek} of your {weeklyGoal} session goal this week.</CardDescription></CardHeader>
-                        <CardContent><Progress value={(sessionsThisWeek / weeklyGoal) * 100} className="w-full" /></CardContent>
-                    </Card>
+                    <div className="bg-white p-8 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3 mb-6">
+                            <Clock className="h-6 w-6 text-blue-600" />
+                            <h2 className="text-2xl font-medium text-gray-900">Up Next</h2>
+                        </div>
+                        <UpNextCard />
+                    </div>
 
-                    {/* --- NEW: At a Glance Stats Card --- */}
-                    <Card>
-                        <CardHeader><CardTitle>At a Glance</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                            <div className="bg-muted p-4 rounded-lg"><Award className="mx-auto h-6 w-6 mb-2 text-primary" /><p className="text-2xl font-bold">{totalSessions}</p><p className="text-sm text-muted-foreground">Total Sessions</p></div>
-                            <div className="bg-muted p-4 rounded-lg"><Flame className="mx-auto h-6 w-6 mb-2 text-orange-500" /><p className="text-2xl font-bold">{studyStreak}</p><p className="text-sm text-muted-foreground">Study Streak</p></div>
-                            <div className="bg-muted p-4 rounded-lg"><Clock className="mx-auto h-6 w-6 mb-2 text-green-500" /><p className="text-2xl font-bold">{hoursFocused}</p><p className="text-sm text-muted-foreground">Hours Focused</p></div>
-                        </CardContent>
-                    </Card>
+                    <div className="bg-white p-8 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Target className="h-6 w-6 text-blue-600" />
+                            <h3 className="text-xl font-medium text-gray-900">Weekly Goal Progress</h3>
+                        </div>
+                        <p className="text-base text-gray-600 mb-6">You've completed {sessionsThisWeek} of your {weeklyGoal} session goal this week.</p>
+                        <Progress value={Math.min((sessionsThisWeek / weeklyGoal) * 100, 100)} className="h-4" />
+                    </div>
+
+                    <div className="bg-white p-8 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Award className="h-6 w-6 text-blue-600" />
+                            <h3 className="text-xl font-medium text-gray-900">Vouch Score</h3>
+                        </div>
+                        <div className="flex items-center gap-4 mb-2">
+                            <span className="text-4xl font-bold text-gray-900">{vouchScore}</span>
+                            <span className="text-base text-gray-600">Your reliability rating</span>
+                        </div>
+                        <p className="text-base text-gray-600">Complete sessions to increase your score. No-shows or late cancellations will reduce it.</p>
+                    </div>
+
+                    <div className="bg-white p-8 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Lightbulb className="h-6 w-6 text-blue-600" />
+                            <h3 className="text-xl font-medium text-gray-900">Productivity Tip</h3>
+                        </div>
+                        <p className="text-base text-gray-600">{tip}</p>
+                    </div>
                 </div>
-
                 <div className="space-y-8">
-                    <Card>
-                        <CardHeader><CardTitle>Your Vouch Score</CardTitle></CardHeader>
-                        <CardContent className="flex flex-col items-center justify-center">
-                            <div className="relative h-32 w-32">
-                                <svg className="transform -rotate-90" width="100%" height="100%" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" strokeWidth="12" className="stroke-muted" /><circle cx="60" cy="60" r="54" fill="none" strokeWidth="12" className="stroke-primary" strokeDasharray={339.292} strokeDashoffset={339.292 * (1 - vouchScore / 100)} style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }} /></svg>
-                                <span className="absolute inset-0 flex items-center justify-center text-3xl font-bold">{vouchScore}%</span>
+                    <div className="bg-white p-8 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <Users className="h-6 w-6 text-blue-600" />
+                                <h3 className="text-xl font-medium text-gray-900">Quick Actions</h3>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-4">This reflects your reliability.</p>
-                        </CardContent>
-                    </Card>
-
-                    {/* --- NEW: Productivity Tip Card --- */}
-                    <Card className="bg-blue-50 border-blue-200">
-                        <CardContent className="p-4 flex items-start gap-4">
-                            <Lightbulb className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
-                            <div>
-                                <h4 className="font-semibold text-blue-900">Productivity Tip</h4>
-                                <p className="text-sm text-blue-800/80">{tip}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Quick Actions</CardTitle>
-                            {/* --- NEW: Online indicator placeholder --- */}
-                            <span className="text-xs flex items-center text-green-600"><div className="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse"></div>47 Partners Online</span>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <Link href="/dashboard/browse" className="block"><Button variant="outline" className="w-full justify-start"><Users className="mr-2 h-4 w-4" /> Browse Partners</Button></Link>
-                            <Link href="/dashboard/sessions" className="block"><Button variant="outline" className="w-full justify-start"><BookOpen className="mr-2 h-4 w-4" /> Manage My Sessions</Button></Link>
-                            <Link href="/dashboard/messages" className="block"><Button variant="outline" className="w-full justify-start"><MessageSquare className="mr-2 h-4 w-4" /> View Messages</Button></Link>
-                            <Link href="/dashboard/stats" className="block"><Button variant="outline" className="w-full justify-start"><BarChart3 className="mr-2 h-4 w-4" /> See My Stats</Button></Link>
-                        </CardContent>
-                    </Card>
+                            <span className="text-xs flex items-center text-gray-600">
+                                <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></div>
+                                {onlineUsersCount} Partners Online
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            <Link href="/dashboard/browse" className="block">
+                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
+                                    <Users className="mr-3 h-5 w-5 text-gray-400" /> Browse Partners
+                                </button>
+                            </Link>
+                            <Link href="/dashboard/sessions" className="block">
+                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
+                                    <BookOpen className="mr-3 h-5 w-5 text-gray-400" /> Manage My Sessions
+                                </button>
+                            </Link>
+                            <Link href="/dashboard/messages" className="block">
+                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
+                                    <MessageSquare className="mr-3 h-5 w-5 text-gray-400" /> View Messages
+                                </button>
+                            </Link>
+                            <Link href="/dashboard/stats" className="block">
+                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
+                                    <BarChart3 className="mr-3 h-5 w-5 text-gray-400" /> See My Stats
+                                </button>
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

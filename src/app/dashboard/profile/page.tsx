@@ -120,6 +120,7 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const [userData, setUserData] = useState<any>(null);
     const [editedData, setEditedData] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState<'personal' | 'availability' | 'preferences'>('personal');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -171,17 +172,34 @@ export default function ProfilePage() {
                 updatedAt: new Date()
             };
 
-            await updateDoc(doc(db, 'users', auth.currentUser.uid), updateData);
+            // Filter out undefined, null, and empty string values
+            const filteredUpdateData = Object.fromEntries(
+                Object.entries(updateData).filter(([_, value]) =>
+                    value !== undefined && value !== null && value !== ''
+                )
+            );
+
+            console.log('Attempting to update profile with data:', filteredUpdateData);
+            console.log('Current user ID:', auth.currentUser.uid);
+
+            await updateDoc(doc(db, 'users', auth.currentUser.uid), filteredUpdateData);
             setUserData(editedData);
 
             toast({
                 title: "Profile updated!",
                 description: "Your changes have been saved successfully.",
             });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Profile update failed:', error);
+            console.error('Error details:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
+
             toast({
                 title: "Error",
-                description: "Failed to update profile. Please try again.",
+                description: `Failed to update profile: ${error.message}`,
                 variant: "destructive",
             });
         } finally {
@@ -191,333 +209,293 @@ export default function ProfilePage() {
 
     const hasChanges = JSON.stringify(userData) !== JSON.stringify(editedData);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    if (!userData) {
-        return <div className="p-6">No user data found</div>;
-    }
-
     return (
-        <div className="p-6 max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">My Profile</h1>
-                    <p className="text-muted-foreground">Manage your profile and preferences</p>
-                </div>
-                {hasChanges && (
-                    <Button onClick={handleSave} disabled={saving}>
-                        {saving ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="mr-2 h-4 w-4" />
-                        )}
-                        Save Changes
-                    </Button>
-                )}
+        <div className="space-y-8 p-6">
+            <div className="text-center">
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">Profile</h1>
+                <p className="text-xl text-gray-600 mt-4">Manage your account settings and preferences.</p>
             </div>
 
-            <Tabs defaultValue="personal" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="personal">
-                        <User className="h-4 w-4 mr-2" />
-                        Personal Info
-                    </TabsTrigger>
-                    <TabsTrigger value="academic">
-                        <Trophy className="h-4 w-4 mr-2" />
-                        Academic
-                    </TabsTrigger>
-                    <TabsTrigger value="availability">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Availability
-                    </TabsTrigger>
-                    <TabsTrigger value="preferences">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Preferences
-                    </TabsTrigger>
-                </TabsList>
+            {loading ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-900" />
+                    <p className="text-gray-600">Loading your profile...</p>
+                </div>
+            ) : userData ? (
+                <div className="space-y-8">
+                    <div className="flex space-x-8 border-b border-gray-200">
+                        <button onClick={() => setActiveTab('personal')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'personal' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Personal Info</button>
+                        <button onClick={() => setActiveTab('availability')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'availability' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Availability</button>
+                        <button onClick={() => setActiveTab('preferences')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'preferences' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Preferences</button>
 
-                <TabsContent value="personal" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Personal Information</CardTitle>
-                            <CardDescription>Update your basic profile information</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Full Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={editedData.name || ''}
-                                        onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
-                                    />
+                    </div>
+
+                    <div className="space-y-8">
+                        {activeTab === 'personal' && (
+                            <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-medium text-gray-900 mb-2">Personal Information</h3>
+                                    <p className="text-gray-600">Update your basic profile details.</p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                        id="email"
-                                        value={userData.email}
-                                        disabled
-                                        className="bg-gray-50"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="university">University</Label>
-                                    <Input
-                                        id="university"
-                                        value={userData.university}
-                                        disabled
-                                        className="bg-gray-50"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="vouchScore">Vouch Score</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id="vouchScore"
-                                            value={userData.vouchScore}
-                                            disabled
-                                            className="bg-gray-50"
-                                        />
-                                        <Badge variant="outline">Read-only</Badge>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="bio">Bio</Label>
-                                <Textarea
-                                    id="bio"
-                                    placeholder="Tell others about yourself..."
-                                    value={editedData.bio || ''}
-                                    onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
-                                    className="min-h-[100px]"
-                                    maxLength={200}
-                                />
-                                <p className="text-xs text-gray-500">{editedData.bio?.length || 0}/200 characters</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="academic" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Academic Information</CardTitle>
-                            <CardDescription>Update your course and study details</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="course">Course</Label>
-                                    <Input
-                                        id="course"
-                                        value={editedData.course || ''}
-                                        onChange={(e) => setEditedData({ ...editedData, course: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Year of Study</Label>
-                                    <Select
-                                        value={editedData.yearOfStudy}
-                                        onValueChange={(value) => setEditedData({ ...editedData, yearOfStudy: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select year" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {['Year 1', 'Year 2', 'Year 3', 'Year 4+'].map(year => (
-                                                <SelectItem key={year} value={year}>{year}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Faculty</Label>
-                                    <Select
-                                        value={editedData.faculty}
-                                        onValueChange={(value) => setEditedData({ ...editedData, faculty: value, subject: '' })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select faculty" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.keys(SUBJECT_DATA).map(faculty => (
-                                                <SelectItem key={faculty} value={faculty}>{faculty}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Subject</Label>
-                                    <Select
-                                        value={editedData.subject}
-                                        onValueChange={(value) => setEditedData({ ...editedData, subject: value })}
-                                        disabled={!editedData.faculty}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select subject" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {editedData.faculty && SUBJECT_DATA[editedData.faculty as keyof typeof SUBJECT_DATA].map(subject => (
-                                                <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Weekly Session Goal</Label>
-                                <div className="flex items-center gap-4">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setEditedData({ ...editedData, weeklySessionGoal: Math.max(1, (editedData.weeklySessionGoal || 5) - 1) })}
-                                    >
-                                        -
-                                    </Button>
-                                    <span className="text-xl font-bold w-10 text-center">
-                                        {editedData.weeklySessionGoal || 5}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setEditedData({ ...editedData, weeklySessionGoal: Math.min(20, (editedData.weeklySessionGoal || 5) + 1) })}
-                                    >
-                                        +
-                                    </Button>
-                                    <span className="text-sm text-muted-foreground">sessions per week</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="availability" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Study Availability</CardTitle>
-                            <CardDescription>Select when you're available for study sessions</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr>
-                                            <th className="text-left p-2">Day</th>
-                                            <th className="text-center p-2">Morning<br /><span className="text-xs font-normal">9am-12pm</span></th>
-                                            <th className="text-center p-2">Afternoon<br /><span className="text-xs font-normal">12pm-5pm</span></th>
-                                            <th className="text-center p-2">Evening<br /><span className="text-xs font-normal">5pm-9pm</span></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {DAYS.map(day => (
-                                            <tr key={day} className="border-t">
-                                                <td className="p-2 font-medium">{day}</td>
-                                                {TIMES.map(time => (
-                                                    <td key={time} className="text-center p-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => toggleAvailability(day, time)}
-                                                            className={`w-16 h-8 rounded-md transition-colors ${editedData.availability?.[day]?.[time]
-                                                                    ? 'bg-purple-600 text-white'
-                                                                    : 'bg-gray-100 hover:bg-gray-200'
-                                                                }`}
-                                                        >
-                                                            {editedData.availability?.[day]?.[time] ? '✓' : ''}
-                                                        </button>
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="preferences" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Study Preferences</CardTitle>
-                            <CardDescription>Set your preferred study environment</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div>
-                                <Label className="text-base font-semibold mb-3 block">Study Atmosphere</Label>
-                                <RadioGroup
-                                    value={editedData.coStudyingAtmosphere}
-                                    onValueChange={(value) => setEditedData({ ...editedData, coStudyingAtmosphere: value })}
-                                >
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Silent & Independent" id="r1" />
-                                            <Label htmlFor="r1" className="font-normal">
-                                                Silent & Independent - Pure focus mode
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Quietly Co-working" id="r2" />
-                                            <Label htmlFor="r2" className="font-normal">
-                                                Quietly Co-working - Occasional check-ins
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Motivational & Social" id="r3" />
-                                            <Label htmlFor="r3" className="font-normal">
-                                                Motivational & Social - Light chat welcome
-                                            </Label>
-                                        </div>
+                                        <label className="text-base font-medium text-gray-900">Full Name</label>
+                                        <input
+                                            type="text"
+                                            value={editedData.name || ''}
+                                            onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Enter your full name"
+                                        />
                                     </div>
-                                </RadioGroup>
-                            </div>
 
-                            <div>
-                                <Label className="text-base font-semibold mb-3 block">Camera Preference</Label>
-                                <RadioGroup
-                                    value={editedData.cameraPreference}
-                                    onValueChange={(value) => setEditedData({ ...editedData, cameraPreference: value })}
-                                >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Camera always on" id="c1" />
-                                            <Label htmlFor="c1" className="font-normal">Camera always on</Label>
+                                    {/* Registered Email (read-only) */}
+                                    <div className="space-y-2">
+                                        <label className="text-base font-medium text-gray-900">Registered Email</label>
+                                        <input
+                                            type="email"
+                                            value={userData.email || ''}
+                                            readOnly
+                                            disabled
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-base font-medium text-gray-900">Course</label>
+                                        <input
+                                            type="text"
+                                            value={editedData.course || ''}
+                                            onChange={(e) => setEditedData({ ...editedData, course: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="e.g., Computer Science"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-base font-medium text-gray-900">Year of Study</label>
+                                        <select
+                                            value={editedData.yearOfStudy || ''}
+                                            onChange={(e) => setEditedData({ ...editedData, yearOfStudy: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="">Select year</option>
+                                            <option value="Year 1">Year 1</option>
+                                            <option value="Year 2">Year 2</option>
+                                            <option value="Year 3">Year 3</option>
+                                            <option value="Year 4">Year 4</option>
+                                            <option value="Masters">Masters</option>
+                                            <option value="PhD">PhD</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-base font-medium text-gray-900">Faculty</label>
+                                        <select
+                                            value={editedData.faculty || ''}
+                                            onChange={(e) => {
+                                                setEditedData({
+                                                    ...editedData,
+                                                    faculty: e.target.value,
+                                                    subject: '' // Reset subject when faculty changes
+                                                });
+                                            }}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="">Select faculty</option>
+                                            {Object.keys(SUBJECT_DATA).map(faculty => (
+                                                <option key={faculty} value={faculty}>{faculty}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {editedData.faculty && (
+                                        <div className="space-y-2">
+                                            <label className="text-base font-medium text-gray-900">Subject</label>
+                                            <select
+                                                value={editedData.subject || ''}
+                                                onChange={(e) => setEditedData({ ...editedData, subject: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="">Select subject</option>
+                                                {SUBJECT_DATA[editedData.faculty as keyof typeof SUBJECT_DATA]?.map(subject => (
+                                                    <option key={subject} value={subject}>{subject}</option>
+                                                ))}
+                                            </select>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Camera on for check-ins" id="c2" />
-                                            <Label htmlFor="c2" className="font-normal">Camera for check-ins</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Camera always off" id="c3" />
-                                            <Label htmlFor="c3" className="font-normal">Camera always off</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="Flexible" id="c4" />
-                                            <Label htmlFor="c4" className="font-normal">Flexible</Label>
+                                    )}
+
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-base font-medium text-gray-900">Bio</label>
+                                        <textarea
+                                            value={editedData.bio || ''}
+                                            onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            rows={4}
+                                            placeholder="Tell potential study partners about yourself..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'availability' && (
+                            <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-medium text-gray-900 mb-2">Availability</h3>
+                                    <p className="text-gray-600">Set your study hours and days.</p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr>
+                                                    <th className="text-left p-2 text-lg font-bold">Day</th>
+                                                    <th className="text-center p-2 text-lg font-bold">Morning<br /><span className="text-base font-normal">9am-12pm</span></th>
+                                                    <th className="text-center p-2 text-lg font-bold">Afternoon<br /><span className="text-base font-normal">12pm-5pm</span></th>
+                                                    <th className="text-center p-2 text-lg font-bold">Evening<br /><span className="text-base font-normal">5pm-9pm</span></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {DAYS.map(day => (
+                                                    <tr key={day} className="border-t">
+                                                        <td className="p-2 font-medium">{day}</td>
+                                                        {(['morning', 'afternoon', 'evening'] as const).map((time) => (
+                                                            <td key={time} className="text-center p-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleAvailability(day, time)}
+                                                                    className={`w-16 h-8 rounded-md transition-colors ${editedData.availability?.[day]?.[time]
+                                                                        ? 'bg-blue-600 text-white'
+                                                                        : 'bg-gray-100 hover:bg-gray-200'} text-sm font-bold capitalize`}
+                                                                >
+                                                                    {editedData.availability?.[day]?.[time] ? '✓' : ''}
+                                                                </button>
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'preferences' && (
+                            <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-medium text-gray-900 mb-2">Preferences</h3>
+                                    <p className="text-gray-600">Tell us about your study preferences.</p>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div>
+                                        <label className="text-base font-semibold mb-3 block">Preferred co-studying atmosphere</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            {["Silent & Independent", "Quietly Co-working", "Motivational & Social"].map((option) => (
+                                                <button
+                                                    key={option}
+                                                    type="button"
+                                                    className={`flex flex-col items-start p-4 border rounded-lg cursor-pointer transition-all
+                                                        ${editedData.coStudyingAtmosphere === option ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-600' : 'bg-white hover:border-gray-400'}`}
+                                                    onClick={() => setEditedData({
+                                                        ...editedData,
+                                                        coStudyingAtmosphere: editedData.coStudyingAtmosphere === option ? '' : option,
+                                                    })}
+                                                >
+                                                    <span className="font-medium">
+                                                        {option === 'Silent & Independent' && 'Silent & Independent'}
+                                                        {option === 'Quietly Co-working' && 'Quietly Co-working'}
+                                                        {option === 'Motivational & Social' && 'Motivational & Social'}
+                                                    </span>
+                                                    <span className="text-sm text-gray-600 mt-1">
+                                                        {option === 'Silent & Independent' && 'Pure focus mode. No interaction except start/end check-ins.'}
+                                                        {option === 'Quietly Co-working' && 'Mostly quiet with occasional check-ins or quick questions.'}
+                                                        {option === 'Motivational & Social' && 'Light chat welcome. Share progress and encourage each other.'}
+                                                    </span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                </RadioGroup>
+                                    <div>
+                                        <label className="text-base font-semibold mb-3 block">Camera preference during sessions</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {["Camera always on", "Camera for check-ins", "Camera always off", "Flexible"].map((option) => (
+                                                <button
+                                                    key={option}
+                                                    type="button"
+                                                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all
+                                                        ${editedData.cameraPreference === option ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-600' : 'bg-white hover:border-gray-400'}`}
+                                                    onClick={() => setEditedData({
+                                                        ...editedData,
+                                                        cameraPreference: editedData.cameraPreference === option ? '' : option,
+                                                    })}
+                                                >
+                                                    <span>
+                                                        {option === 'Camera always on' && '📹 Camera always on'}
+                                                        {option === 'Camera for check-ins' && '📷 Camera for check-ins'}
+                                                        {option === 'Camera always off' && '🚫 Camera always off'}
+                                                        {option === 'Flexible' && 'Flexible'}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-base font-semibold mb-2 block">Weekly session goal</label>
+                                        <div className="flex items-center space-x-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditedData({ ...editedData, weeklySessionGoal: Math.max(1, (editedData.weeklySessionGoal || 5) - 1) })}
+                                                className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50"
+                                            >
+                                                -
+                                            </button>
+                                            <span className="text-xl font-bold w-10 text-center">{editedData.weeklySessionGoal || 5}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditedData({ ...editedData, weeklySessionGoal: Math.min(20, (editedData.weeklySessionGoal || 5) + 1) })}
+                                                className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50"
+                                            >
+                                                +
+                                            </button>
+                                            <span className="text-sm text-gray-600">sessions per week</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                        )}
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-lg text-base font-medium transition-colors disabled:opacity-50"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Changes
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                    <User className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">Profile not found</h3>
+                    <p className="mt-1 text-sm text-gray-600">Unable to load your profile information.</p>
+                </div>
+            )}
         </div>
     );
 }

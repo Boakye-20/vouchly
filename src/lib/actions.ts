@@ -2,7 +2,8 @@
 
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { isValidSessionTransition, SessionStatus } from './session-states';
-import { sendNotification } from './notifications';
+import { createUndoAction } from './undo';
+import { notificationTemplates, sendNotification } from './notifications/templates';
 import { logAnalyticsEvent } from './analytics';
 import admin from 'firebase-admin';
 import { adminDb } from './firebase-admin';
@@ -20,11 +21,13 @@ export async function adjustVouchScoreAction(input: VouchScoreEventInput) {
         if (!sessionSnap.exists) throw new Error("Session not found!");
         const sessionData = sessionSnap.data()!;
 
-        let updateData: any = {
+        let updateData: Record<string, unknown> = {
             updatedAt: FieldValue.serverTimestamp()
         };
         let shouldAdjustVouchScore = true;
-        let vouchResult: any = undefined;
+        // Will hold undo action document id if a cancellation generates one
+        let createdUndoId: string | undefined;
+        let vouchResult: unknown = undefined;
 
         // --- Enforce valid session state transitions ---
         const fromStatus = sessionData.status as SessionStatus;
@@ -38,7 +41,7 @@ export async function adjustVouchScoreAction(input: VouchScoreEventInput) {
                 toStatus = 'completed'; break;
             case 'CANCELLED_WITH_NOTICE':
             case 'CANCELLED_LOCKED_IN':
-                toStatus = 'cancelled'; break;
+                toStatus = 'pending_cancellation'; break;
             case 'REQUEST_DECLINED':
                 toStatus = 'cancelled'; break;
             case 'RESCHEDULED_WITH_NOTICE':
@@ -143,17 +146,24 @@ export async function adjustVouchScoreAction(input: VouchScoreEventInput) {
 
             case 'CANCELLED_WITH_NOTICE':
             case 'CANCELLED_LOCKED_IN': {
+                // Move to pending_cancellation state and create undo action
+                const previousState = sessionData.status;
                 updateData = {
                     ...updateData,
-                    status: 'cancelled',
+                    status: 'pending_cancellation',
                     cancelledBy: userId,
-                    cancellationTime: FieldValue.serverTimestamp(),
-                    endTime: FieldValue.serverTimestamp() // Mark as valid session with end time
+                    pendingCancellationAt: FieldValue.serverTimestamp(),
+                    previousState: previousState
                 };
-                // If session is still 'requested', do not adjust vouch score
-                if (sessionData.status === 'requested') {
-                    shouldAdjustVouchScore = false;
-                }
+                // Create an undo action that expires in 5 minutes
+                createdUndoId = await createUndoAction({
+                    action: 'CANCEL_SESSION',
+                    sessionId,
+                    previousState,
+                    userId,
+                });
+                // Do not adjust vouch score yet
+                shouldAdjustVouchScore = false;
                 break;
             }
 
@@ -199,73 +209,84 @@ export async function adjustVouchScoreAction(input: VouchScoreEventInput) {
         // --- Send notifications for session events ---
         const initiatorId = sessionData.initiatorId;
         const recipientId = sessionData.recipientId;
-        const sessionTime = sessionData.scheduledStartTime instanceof Date ? sessionData.scheduledStartTime : (sessionData.scheduledStartTime?.toDate?.() || '');
         const topic = sessionData.focusTopic || 'a study session';
         const sessionLink = `/dashboard/sessions`;
-        if (eventType === 'REQUEST_ACCEPTED') {
-            await sendNotification({
-                userId: initiatorId,
-                text: `Your study request for "${topic}" was accepted!`,
-                link: sessionLink,
-                type: 'success',
-            });
-            await sendNotification({
-                userId: recipientId,
-                text: `You accepted a study request for "${topic}".`,
-                link: sessionLink,
-                type: 'info',
-            });
-        } else if (eventType === 'REQUEST_DECLINED') {
-            await sendNotification({
-                userId: initiatorId,
-                text: `Your study request for "${topic}" was declined.`,
-                link: sessionLink,
-                type: 'warning',
-            });
-        } else if (eventType === 'CANCELLED_WITH_NOTICE' || eventType === 'CANCELLED_LOCKED_IN') {
+        
+        if (eventType === 'CANCELLED_WITH_NOTICE' || eventType === 'CANCELLED_LOCKED_IN') {
             const otherUserId = userId === initiatorId ? recipientId : initiatorId;
-            await sendNotification({
+            await notificationTemplates.sessionCancelled({
                 userId: otherUserId,
-                text: `A study session for "${topic}" was cancelled.`,
-                link: sessionLink,
-                type: 'warning',
+                sessionId: sessionId,
+                partnerName: userId === initiatorId ? sessionData.recipientName : sessionData.initiatorName,
+                scheduledTime: sessionData.scheduledStartTime.toDate(),
+                timezone: sessionData.timezone || 'UTC',
+                reason: 'The session was cancelled.'
             });
         } else if (eventType === 'COMPLETION_CONFIRMED') {
-            await sendNotification({
+            await notificationTemplates.sessionCompleted({
                 userId: initiatorId,
-                text: `Session "${topic}" marked as complete. Well done!`,
-                link: sessionLink,
-                type: 'success',
+                sessionId: sessionId,
+                partnerName: sessionData.recipientName,
+                scheduledTime: sessionData.scheduledStartTime.toDate(),
+                timezone: sessionData.timezone || 'UTC'
             });
-            await sendNotification({
+            
+            await notificationTemplates.sessionCompleted({
                 userId: recipientId,
-                text: `Session "${topic}" marked as complete. Well done!`,
-                link: sessionLink,
-                type: 'success',
+                sessionId: sessionId,
+                partnerName: sessionData.initiatorName,
+                scheduledTime: sessionData.scheduledStartTime.toDate(),
+                timezone: sessionData.timezone || 'UTC'
             });
         }
 
         // Optionally adjust vouch score
+        let resultMessage = getDefaultMessage(eventType);
+        let vouchScore: number | undefined = undefined;
+        
         if (shouldAdjustVouchScore) {
-            vouchResult = await adjustVouchScore({
-                ...input,
-                eventType: vouchScoreEvent
-            });
+            try {
+                const vouchResult = await adjustVouchScore({
+                    ...input,
+                    eventType: vouchScoreEvent
+                });
+                
+                // If we have a valid result with a message, use it
+                if (vouchResult?.message) {
+                    resultMessage = vouchResult.message;
+                }
+                // Store the new vouch score if available
+                if (typeof vouchResult?.newVouchScore === 'number') {
+                    vouchScore = vouchResult.newVouchScore;
+                }
+            } catch (error) {
+                console.error("Error adjusting vouch score:", error);
+                // Continue with the default message even if vouch score adjustment fails
+            }
         }
-
-        // Use vouchResult.message if available, else default
-        let resultMessage;
-        if (shouldAdjustVouchScore && typeof vouchResult !== 'undefined' && vouchResult.message) {
-            resultMessage = vouchResult.message;
-        } else {
-            resultMessage = getDefaultMessage(eventType);
+        
+        // Prepare the response data
+        const responseData: { message: string; vouchScore?: number; undoId?: string } = { message: resultMessage };
+        if (vouchScore !== undefined) {
+            responseData.vouchScore = vouchScore;
         }
-        return { success: true, data: { message: resultMessage } };
+        if (createdUndoId) {
+            responseData.undoId = createdUndoId;
+        }
+        
+        return { 
+            success: true, 
+            data: responseData
+        };
 
     } catch (error) {
         console.error("Error in adjustVouchScoreAction:", error);
         const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-        return { success: false, error: errorMessage };
+        return { 
+            success: false, 
+            error: errorMessage,
+            message: errorMessage // Ensure message is always present
+        };
     }
 }
 
@@ -298,6 +319,20 @@ export async function sendStudyRequestAction(requestData: {
     try {
         const { senderId, recipientId, senderName, recipientName, focusTopic, initialMessage, scheduledStartTime, durationMinutes } = requestData;
 
+        // Check for scheduling conflicts for both users
+        const { findBookingConflict } = await import('./services/booking-conflict');
+        
+        // Check if sender has a conflict
+        const senderConflict = await findBookingConflict(senderId, scheduledStartTime, durationMinutes, 15);
+        if (senderConflict) {
+            throw new Error('You already have another session scheduled around that time. Please choose a different time.');
+        }
+        
+        // Check if recipient has a conflict
+        const recipientConflict = await findBookingConflict(recipientId, scheduledStartTime, durationMinutes, 15);
+        if (recipientConflict) {
+            throw new Error('The recipient already has another session scheduled at that time. Please choose a different time.');
+        }
 
         const batch = adminDb.batch();
 
@@ -318,10 +353,30 @@ export async function sendStudyRequestAction(requestData: {
             durationMinutes: durationMinutes
         });
 
+        // Send notification using the template
+        const notification = await notificationTemplates.sessionRequest({
+            userId: recipientId,
+            sessionId: sessionRef.id,
+            partnerName: senderName,
+            scheduledTime: scheduledStartTime,
+            timezone: 'UTC', // TODO: Get recipient's timezone
+            email: undefined // TODO: Add recipient email if available
+        });
+
+        // Add notification to batch
         const notificationRef = adminDb.collection(`users/${recipientId}/notifications`).doc();
-        batch.set(notificationRef, {
-            text: `You have a new study request from ${senderName}.`,
-            link: '/dashboard/sessions',
+        const notificationData = Object.assign({}, notification, {
+            createdAt: FieldValue.serverTimestamp()
+        });
+        batch.set(notificationRef, notificationData);
+
+        // Notify the sender that their request was sent
+        const senderNotificationRef = adminDb.collection(`users/${senderId}/notifications`).doc();
+        batch.set(senderNotificationRef, {
+            type: 'info',
+            title: 'Request Sent',
+            message: `Your study session request to ${recipientName} has been sent.`,
+            link: `/sessions/${sessionRef.id}`,
             read: false,
             createdAt: FieldValue.serverTimestamp()
         });
@@ -357,8 +412,26 @@ export async function rescheduleSessionAction(params: {
         console.log("Session data:", sessionData);
         console.log("Participant IDs:", sessionData.participantIds);
 
+        // Check for scheduling conflicts for both users with the new time
+        const { findBookingConflict } = await import('./services/booking-conflict');
+        const durationMinutes = sessionData.durationMinutes || 60;
+        
+        // Check if requester has a conflict (excluding current session)
+        const requesterConflict = await findBookingConflict(requesterId, newDateTime, durationMinutes, 15);
+        if (requesterConflict && requesterConflict.id !== sessionId) {
+            throw new Error('You already have another session scheduled around that time. Please choose a different time.');
+        }
+        
         // Find the ID of the other person in the session
         const otherParticipantId = sessionData.participantIds?.find((id: string) => id !== requesterId);
+        
+        if (otherParticipantId) {
+            // Check if other participant has a conflict (excluding current session)
+            const otherConflict = await findBookingConflict(otherParticipantId, newDateTime, durationMinutes, 15);
+            if (otherConflict && otherConflict.id !== sessionId) {
+                throw new Error('The other participant already has another session scheduled at that time. Please choose a different time.');
+            }
+        }
         console.log("Other participant ID:", otherParticipantId);
 
         if (!otherParticipantId) {
@@ -389,14 +462,27 @@ export async function rescheduleSessionAction(params: {
             updatedAt: FieldValue.serverTimestamp()
         });
 
-        // 2. Create a notification for the other user
+        // 2. Send a notification to the other user using the template
+        const notificationData = {
+            userId: otherParticipantId,
+            sessionId: sessionId,
+            partnerName: requesterName,
+            oldTime: sessionData.scheduledStartTime.toDate(),
+            newTime: newDateTime,
+            timezone: sessionData.timezone || 'UTC',
+            email: sessionData.participants?.[otherParticipantId]?.email
+        };
+
+        // Add the notification to the batch
         const notificationRef = adminDb.collection(`users/${otherParticipantId}/notifications`).doc();
-        batch.set(notificationRef, {
-            text: `${requesterName} has proposed a new time for your session.`,
-            link: `/dashboard/sessions`,
-            read: false,
+        const notification = await notificationTemplates.rescheduleRequest(notificationData);
+        
+        // Create a new object with the notification properties and timestamp
+        const notificationWithTimestamp = Object.assign({}, notification, {
             createdAt: FieldValue.serverTimestamp()
         });
+        
+        batch.set(notificationRef, notificationWithTimestamp);
 
         await batch.commit();
         console.log("Reschedule batch committed successfully");

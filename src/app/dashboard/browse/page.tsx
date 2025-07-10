@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, DocumentSnapshot, QuerySnapshot, orderBy, limit, startAfter, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { UK_UNIVERSITIES } from '@/lib/universities';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -109,43 +109,56 @@ const SUBJECT_DATA = {
     ]
 };
 
-const calculateScheduleOverlap = (userAvailability: any, partnerAvailability: any): number => {
+// Returns the count of shared availability slots between two users (max 15*3 = 45 theoretically)
+const calculateSharedSlots = (userAvailability: any, partnerAvailability: any): number => {
     if (!userAvailability || !partnerAvailability) return 0;
-    let userTotalSlots = 0;
-    let commonSlots = 0;
+    let shared = 0;
     const periods = ['morning', 'afternoon', 'evening'];
     for (const period of periods) {
-        const userDays = userAvailability[period] || [];
-        const partnerDays = partnerAvailability[period] || [];
-        userTotalSlots += userDays.length;
+        const userDays: string[] = userAvailability[period] || [];
+        const partnerDays: string[] = partnerAvailability[period] || [];
         for (const day of userDays) {
-            if (partnerDays.includes(day)) commonSlots++;
+            if (partnerDays.includes(day)) shared++;
         }
     }
-    if (userTotalSlots === 0) return 0;
-    return (commonSlots / userTotalSlots) * 100;
+    return shared; // each shared slot equates to 8 points up to 40
 };
 
 // --- UPDATED: Matching algorithm to use new faculty/subject fields ---
 const calculateMatchScore = (user: any, partner: any): number => {
-    let totalScore = 0;
-    // 1. Schedule overlap (40%)
-    totalScore += (calculateScheduleOverlap(user.availability, partner.availability) / 100) * 40;
-    // 2. Vouch Score similarity (30%)
-    const vouchDiff = Math.abs((user.vouchScore || 80) - (partner.vouchScore || 80));
-    totalScore += (Math.max(0, 100 - vouchDiff * 5) / 100) * 30;
-    // 3. Course compatibility (15%) - Now more granular
-    if (user.subject && user.subject === partner.subject) {
-        totalScore += 15; // Exact subject match gets full points
-    } else if (user.faculty && user.faculty === partner.faculty) {
-        totalScore += 5; // Same faculty but different subject gets partial points
-    }
-    // 4. Study atmosphere (10%)
-    if (user.coStudyingAtmosphere === partner.coStudyingAtmosphere) totalScore += 10;
-    // 5. Same university (5%)
-    if (user.university === partner.university) totalScore += 5;
+    let total = 0;
 
-    return Math.round(Math.min(100, totalScore));
+    // 1. 🗓️ Schedule Overlap (Max 40 pts, 8 pts per shared slot)
+    const sharedSlots = calculateSharedSlots(user.availability, partner.availability);
+    const schedulePoints = Math.min(sharedSlots * 8, 40);
+    total += schedulePoints;
+
+    // 2. ✅ Reliability – Vouch Score similarity (Max 30 pts)
+    const vouchDiff = Math.abs((user.vouchScore ?? 80) - (partner.vouchScore ?? 80));
+    let vouchPoints = 0;
+    if (vouchDiff <= 5) vouchPoints = 30;
+    else if (vouchDiff <= 10) vouchPoints = 20;
+    else if (vouchDiff <= 20) vouchPoints = 10;
+    total += vouchPoints;
+
+    // 3. 📚 Subject Compatibility (Max 15 pts)
+    let subjectPoints = 0;
+    if (user.subject && partner.subject && user.subject === partner.subject) {
+        subjectPoints = 15;
+    } else if (user.faculty && partner.faculty && user.faculty === partner.faculty) {
+        subjectPoints = 10;
+    }
+    total += subjectPoints;
+
+    // 4. 🤝 Co-studying Atmosphere Preference (Max 10 pts)
+    const atmospherePoints = user.coStudyingAtmosphere && user.coStudyingAtmosphere === partner.coStudyingAtmosphere ? 10 : 0;
+    total += atmospherePoints;
+
+    // 5. 🎓 Same University Bonus (Max 5 pts)
+    const uniPoints = user.university && user.university === partner.university ? 5 : 0;
+    total += uniPoints;
+
+    return Math.min(100, Math.round(total));
 };
 
 export default function BrowsePartnersPage() {
@@ -154,6 +167,8 @@ export default function BrowsePartnersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+    const [hasMore, setHasMore] = useState(true);
 
     // --- UPDATED: Filters state with faculty/subject ---
     const [filters, setFilters] = useState({
@@ -164,7 +179,7 @@ export default function BrowsePartnersPage() {
         minVouchScore: 0,
     });
 
-    // --- This useEffect for fetching data remains the same ---
+    // Fetch first page of partners
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (user: User | null) => {
             if (user) {
@@ -172,17 +187,58 @@ export default function BrowsePartnersPage() {
                 const unsubscribeUser = onSnapshot(userDocRef, (snapshot: DocumentSnapshot) => {
                     if (snapshot.exists()) setCurrentUser({ id: snapshot.id, ...snapshot.data() });
                 });
-                const partnersQuery = query(collection(db, 'users'), where('uid', '!=', user.uid));
-                const unsubscribePartners = onSnapshot(partnersQuery, (snapshot: QuerySnapshot) => {
-                    const partnersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setPartners(partnersData);
-                    setLoading(false);
-                });
-                return () => { unsubscribeUser(); unsubscribePartners(); };
+                // Initial fetch
+                const fetchPartners = async () => {
+                    setLoading(true);
+                    try {
+                        const partnersQuery = query(
+                            collection(db, 'users'),
+                            where('uid', '!=', user.uid),
+                            orderBy('createdAt'),
+                            limit(20)
+                        );
+                        const snapshot = await getDocs(partnersQuery);
+                        const partnersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setPartners(partnersData);
+                        setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+                        setHasMore(snapshot.docs.length === 20);
+                    } catch (error) {
+                        console.error('Error fetching partners:', error);
+                        setPartners([]);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchPartners();
+                return () => { unsubscribeUser(); };
             } else { setLoading(false); }
         });
         return () => unsubscribeAuth();
     }, []);
+
+    // Load more partners
+    const loadMorePartners = async () => {
+        if (!currentUser || !lastDoc) return;
+        setLoading(true);
+        try {
+            const partnersQuery = query(
+                collection(db, 'users'),
+                where('uid', '!=', currentUser.id),
+                orderBy('createdAt'),
+                startAfter(lastDoc),
+                limit(20)
+            );
+            const snapshot = await getDocs(partnersQuery);
+            const partnersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setPartners(prev => [...prev, ...partnersData]);
+            setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+            setHasMore(snapshot.docs.length === 20);
+        } catch (error) {
+            console.error('Error loading more partners:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // --- UPDATED: This useEffect handles all filtering logic ---
     useEffect(() => {
@@ -227,20 +283,22 @@ export default function BrowsePartnersPage() {
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-6 space-y-8">
             <div className="text-center">
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Browse Partners</h1>
-                <p className="text-muted-foreground mt-2">Find the perfect study buddy to achieve your goals.</p>
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">Browse Partners</h1>
+                <p className="text-xl text-gray-600 mt-4">Find the perfect study buddy to achieve your goals.</p>
             </div>
 
-            {/* --- UPDATED: Advanced Filters Bar with Two-Tiered Subjects --- */}
-            <div className="bg-card rounded-xl p-4 border shadow-sm">
+            {/* Advanced Filters Bar */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                     {/* Faculty Filter */}
                     <div className="space-y-2">
-                        <Label>Faculty</Label>
+                        <label className="text-base font-medium text-gray-900">Faculty</label>
                         <Select onValueChange={handleFacultyChange} value={filters.faculty}>
-                            <SelectTrigger><SelectValue placeholder="Select Faculty..." /></SelectTrigger>
+                            <SelectTrigger className="border-gray-200 focus:border-blue-500">
+                                <SelectValue placeholder="Select Faculty..." />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="All">All Faculties</SelectItem>
                                 {Object.keys(SUBJECT_DATA).map(faculty => <SelectItem key={faculty} value={faculty}>{faculty}</SelectItem>)}
@@ -249,9 +307,11 @@ export default function BrowsePartnersPage() {
                     </div>
                     {/* Subject Filter (Dependent) */}
                     <div className="space-y-2">
-                        <Label>Subject</Label>
+                        <label className="text-base font-medium text-gray-900">Subject</label>
                         <Select onValueChange={(value) => setFilters(f => ({ ...f, subject: value }))} value={filters.subject} disabled={filters.faculty === 'All'}>
-                            <SelectTrigger><SelectValue placeholder="Select Subject..." /></SelectTrigger>
+                            <SelectTrigger className="border-gray-200 focus:border-blue-500">
+                                <SelectValue placeholder="Select Subject..." />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="All">All Subjects</SelectItem>
                                 {filters.faculty !== 'All' && SUBJECT_DATA[filters.faculty as keyof typeof SUBJECT_DATA].map(subject => <SelectItem key={subject} value={subject}>{subject}</SelectItem>)}
@@ -260,7 +320,7 @@ export default function BrowsePartnersPage() {
                     </div>
                     {/* University Filter */}
                     <div className="space-y-2">
-                        <Label>University</Label>
+                        <label className="text-base font-medium text-gray-900">University</label>
                         <SearchableSelect
                             options={["All Universities", ...UK_UNIVERSITIES]}
                             value={filters.university === "All" ? "All Universities" : filters.university}
@@ -277,9 +337,11 @@ export default function BrowsePartnersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-end">
                     {/* Study Atmosphere Filter */}
                     <div className="space-y-2">
-                        <Label>Study Atmosphere</Label>
+                        <label className="text-base font-medium text-gray-900">Study Atmosphere</label>
                         <Select onValueChange={(value) => setFilters(f => ({ ...f, studyAtmosphere: value }))} defaultValue="Any">
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="border-gray-200 focus:border-blue-500">
+                                <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Any">Any Atmosphere</SelectItem>
                                 <SelectItem value="Silent & Independent">Silent & Independent</SelectItem>
@@ -289,26 +351,52 @@ export default function BrowsePartnersPage() {
                     </div>
                     {/* Vouch Score Slider */}
                     <div className="space-y-2">
-                        <Label>Min. Vouch Score: <span className="font-bold text-primary">{filters.minVouchScore}%</span></Label>
-                        <input type="range" min="0" max="100" step="5" value={filters.minVouchScore} onChange={(e) => setFilters(f => ({ ...f, minVouchScore: parseInt(e.target.value) }))} className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer" />
+                        <label className="text-base font-medium text-gray-900">Min. Vouch Score: <span className="font-bold text-blue-600">{filters.minVouchScore}%</span></label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={filters.minVouchScore}
+                            onChange={(e) => setFilters(f => ({ ...f, minVouchScore: parseInt(e.target.value) }))}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
                     </div>
                 </div>
                 <div className="relative mt-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search by name or course..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 w-full" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                        placeholder="Search by name or course..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-full border-gray-200 focus:border-blue-500"
+                    />
                 </div>
             </div>
 
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><Skeleton className="h-48 w-full" /><Skeleton className="h-48 w-full" /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-lg border border-gray-200 h-48 animate-pulse"></div>
+                    <div className="bg-white p-6 rounded-lg border border-gray-200 h-48 animate-pulse"></div>
+                </div>
             ) : filteredPartners.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {filteredPartners.map((partner) => (
-                        <PartnerCard key={partner.id} partner={partner} currentUser={currentUser} />))}
+                        <PartnerCard key={partner.id} partner={partner} currentUser={currentUser} />
+                    ))}
                 </div>
             ) : (
-                <div className="text-center py-16 text-muted-foreground">No partners found matching your criteria.</div>
+                <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No partners found</h3>
+                    <p className="text-gray-600">Try adjusting your filters to find more study partners.</p>
+                </div>
             )}
+
+            {hasMore && !loading && (
+                <button onClick={loadMorePartners} className="mt-4 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-base font-medium transition-colors">Load More</button>
+            )}
+            {loading && <div className="mt-4 text-center text-gray-600">Loading...</div>}
 
         </div>
     );

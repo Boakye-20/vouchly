@@ -1,502 +1,380 @@
-import Link from "next/link";
-import { VouchlyLogo } from "@/components/icons";
-import { Menu, CheckCircle, XCircle, Check, Video, Shield, LineChart, Filter, Bell, Users, Star } from "lucide-react";
+import Link from 'next/link';
+import { VouchlyLogo } from '@/components/icons';
+import { CheckCircle, Mail, Users, Brain, Video, Lock, TrendingUp, Filter, Bell, BarChart3, MessageSquare, Award, Calendar, Lightbulb } from 'lucide-react';
 
-export default function Home() {
+export default function HomePage() {
     return (
-        <div className="bg-white">
+        <div className="min-h-screen bg-white">
             {/* Navigation */}
-            <nav className="bg-white shadow-sm sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
+            <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="h-16 flex items-center justify-between">
                         <Link href="/" className="flex items-center space-x-2">
-                            <VouchlyLogo className="h-8 w-8 text-primary" />
-                            <h1 className="text-2xl font-bold font-headline text-gray-800">Vouchly</h1>
+                            <VouchlyLogo className="h-8 w-8 text-blue-600" />
+                            <span className="text-xl font-semibold tracking-tight">Vouchly</span>
                         </Link>
-                        <div className="hidden md:flex items-center space-x-8">
-                            <a href="#how-it-works" className="text-gray-600 hover:text-gray-900">How it Works</a>
-                            <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
-                            <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Success Stories</a>
-                            <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
-                            <Link href="/auth" className="px-4 py-2 text-primary hover:text-primary/80 font-medium">Log In</Link>
-                            <Link href="/auth" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium">
+                        <div className="flex items-center space-x-8">
+                            <Link href="/auth" className="text-gray-600 hover:text-gray-900 text-base transition-colors">
+                                Log In
+                            </Link>
+                            <Link href="/auth" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-base font-medium transition-colors">
                                 Get Started Free
                             </Link>
                         </div>
-                        <button className="md:hidden">
-                            <Menu className="text-gray-600" />
-                        </button>
                     </div>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center">
-                        <div>
-                            <div className="flex items-center space-x-2 mb-4">
-                                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                                    🎉 100% Free for UK University Students
-                                </span>
+            <section className="pt-32 pb-24">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="max-w-4xl">
+                        <div className="text-blue-600 text-base font-medium tracking-wide mb-6 flex items-center gap-2">
+                            <Users className="h-5 w-5 text-blue-600" />
+                            BUILT FOR UK UNIVERSITY STUDENTS
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-light tracking-tight text-gray-900 leading-tight mb-8">
+                            Find reliable study partners<br />
+                            who actually show up.
+                        </h1>
+                        <p className="text-2xl text-gray-600 mb-8 leading-relaxed">
+                            Vouchly connects UK university students through intelligent matching, built-in video sessions, and a transparent accountability system that rewards reliability.
+                        </p>
+                        <div className="mb-8">
+                            <Link href="/auth" className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors inline-block">
+                                Get Started Free
+                            </Link>
+                        </div>
+                        <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 text-base transition-colors">
+                            See how it works ↓
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Problem Statement */}
+            <section className="py-24 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="max-w-4xl flex items-center gap-4">
+                        <Award className="h-8 w-8 text-blue-600 flex-shrink-0" />
+                        <p className="text-3xl md:text-4xl text-gray-700 leading-relaxed font-light">
+                            Finding someone to study with is easy. Finding someone who actually shows up? That's the real challenge.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* How it Works */}
+            <section id="how-it-works" className="py-24">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="max-w-4xl">
+                        <h2 className="text-3xl md:text-4xl font-medium text-gray-900 mb-16 flex items-center gap-3">
+                            <Brain className="h-7 w-7 text-blue-600" />
+                            How intelligent matching creates accountability
+                        </h2>
+                        <div className="space-y-16">
+                            <div className="grid grid-cols-[60px_1fr] gap-8 items-center">
+                                <div className="text-2xl text-gray-400 font-light">01</div>
+                                <div className="flex items-center gap-3">
+                                    <Mail className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                                    <div>
+                                        <h3 className="text-xl font-medium text-gray-900 mb-2">Verify with university email</h3>
+                                        <p className="text-lg text-gray-600">Only verified UK university students (.ac.uk) can join. Set your schedule, subjects, and study preferences.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <h1 className="text-5xl font-bold text-gray-900 mb-6 font-headline">
-                                Find Study Partners Who <span className="gradient-text">Actually Show Up</span>
-                            </h1>
-                            <p className="text-xl text-gray-700 mb-8 font-body">
-                                Join thousands of UK uni students using our Vouch Score system to find reliable,
-                                committed study partners for focused co-studying sessions. No more no-shows,
-                                just productive accountability.
+                            <div className="grid grid-cols-[60px_1fr] gap-8 items-center">
+                                <div className="text-2xl text-gray-400 font-light">02</div>
+                                <div className="flex items-center gap-3">
+                                    <Brain className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                                    <div>
+                                        <h3 className="text-xl font-medium text-gray-900 mb-2">Smart algorithm matching</h3>
+                                        <p className="text-lg text-gray-600">Our algorithm matches you based on schedule overlap, Vouch Score similarity, subject compatibility, study atmosphere, and university.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-[60px_1fr] gap-8 items-center">
+                                <div className="text-2xl text-gray-400 font-light">03</div>
+                                <div className="flex items-center gap-3">
+                                    <Video className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                                    <div>
+                                        <h3 className="text-xl font-medium text-gray-900 mb-2">Built-in video sessions</h3>
+                                        <p className="text-lg text-gray-600">No external links needed. Join directly in the app with integrated video, session timer, and attendance tracking.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-[60px_1fr] gap-8 items-center">
+                                <div className="text-2xl text-gray-400 font-light">04</div>
+                                <div className="flex items-center gap-3">
+                                    <BarChart3 className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                                    <div>
+                                        <h3 className="text-xl font-medium text-gray-900 mb-2">Transparent Vouch Score system</h3>
+                                        <p className="text-lg text-gray-600">Earn points for completing sessions (+2), lose points for no-shows (-10). Your reputation follows you and affects future matches.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Vouch Score Explanation */}
+            <section className="py-24 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="max-w-4xl">
+                        <h2 className="text-3xl md:text-4xl font-medium text-gray-900 mb-8 flex items-center gap-3">
+                            <BarChart3 className="h-7 w-7 text-blue-600" />
+                            Your Vouch Score: Your Academic Reputation
+                        </h2>
+                        <p className="text-2xl text-gray-600 mb-12 leading-relaxed">
+                            Every action you take affects your Vouch Score, a transparent trust system that rewards reliability and penalises no-shows. Everyone starts with 80 points.
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                            <div className="bg-white p-6 rounded-lg border border-gray-200">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" />Earn Points</h3>
+                                <ul className="space-y-2 text-lg text-gray-600">
+                                    <li className="flex items-start">
+                                        <span className="text-green-500 mr-2"><CheckCircle className="h-5 w-5" /></span>
+                                        Complete a session: +2 points
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="text-green-500 mr-2"><CheckCircle className="h-5 w-5" /></span>
+                                        Start session on time: +0 points
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="text-green-500 mr-2"><CheckCircle className="h-5 w-5" /></span>
+                                        Reschedule with notice: +0 points
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="bg-white p-6 rounded-lg border border-gray-200">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2"><Award className="h-5 w-5 text-red-500" />Lose Points</h3>
+                                <ul className="space-y-2 text-lg text-gray-600">
+                                    <li className="flex items-start">
+                                        <span className="text-red-500 mr-2"><Award className="h-5 w-5" /></span>
+                                        Missed session without notice: -10 points
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="text-red-500 mr-2"><Award className="h-5 w-5" /></span>
+                                        Cancel within 4 hours of start: -10 points
+                                    </li>
+                                    <li className="flex items-start">
+                                        <span className="text-red-500 mr-2"><Award className="h-5 w-5" /></span>
+                                        Two consecutive reschedules: -5 points
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-lg border border-gray-200 mb-8">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><TrendingUp className="h-6 w-6 text-blue-600" />How It Affects Your Experience</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                                <div>
+                                    <div className="text-2xl font-bold text-blue-600 mb-2 flex items-center justify-center gap-2"><Users className="h-5 w-5 text-blue-600" />Better Matches</div>
+                                    <p className="text-lg text-gray-600">Higher scores get matched with more reliable partners</p>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-blue-600 mb-2 flex items-center justify-center gap-2"><BarChart3 className="h-5 w-5 text-blue-600" />Transparent History</div>
+                                    <p className="text-lg text-gray-600">Every score change is logged with reasons</p>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold text-blue-600 mb-2 flex items-center justify-center gap-2"><Award className="h-5 w-5 text-blue-600" />Starting Score: 80</div>
+                                    <p className="text-lg text-gray-600">Everyone starts with a fair baseline</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                            <h3 className="text-lg font-medium text-blue-900 mb-3 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-blue-600" />Fair & Transparent Rules</h3>
+                            <div className="space-y-2 text-blue-800 text-base">
+                                <p><strong>Rescheduling:</strong> First reschedule is free. Only consecutive reschedules (without completing a session in between) are penalised.</p>
+                                <p><strong>Cancellations:</strong> Cancel with more than 4 hours notice and there's no penalty. Life happens!</p>
+                                <p><strong>Session Completion:</strong> Both partners must confirm completion to earn points. No partial credit.</p>
+                                <p><strong>History:</strong> Every score change is logged with the reason, so you always know why your score changed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Data Visualization */}
+            <section className="py-20 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="max-w-4xl">
+                        <h2 className="text-3xl md:text-4xl font-medium text-gray-900 mb-12 flex items-center gap-3">
+                            <BarChart3 className="h-7 w-7 text-blue-600" />
+                            Your reliability, quantified.
+                        </h2>
+                        <div className="bg-white border border-gray-200 rounded-lg p-8 h-80 relative">
+                            <svg width="100%" height="100%" viewBox="0 0 600 250" className="absolute inset-0 p-8">
+                                {/* Grid lines */}
+                                <line x1="40" y1="200" x2="560" y2="200" stroke="#E5E7EB" strokeWidth="1" />
+                                <line x1="40" y1="150" x2="560" y2="150" stroke="#E5E7EB" strokeWidth="1" />
+                                <line x1="40" y1="100" x2="560" y2="100" stroke="#E5E7EB" strokeWidth="1" />
+                                <line x1="40" y1="50" x2="560" y2="50" stroke="#E5E7EB" strokeWidth="1" />
+
+                                {/* Chart line */}
+                                <path d="M 40 120 Q 150 110 200 90 T 350 85 Q 450 80 560 65" stroke="#2563EB" strokeWidth="2" fill="none" />
+
+                                {/* Y-axis labels */}
+                                <text x="20" y="205" fontSize="12" fill="#6B7280">70</text>
+                                <text x="20" y="155" fontSize="12" fill="#6B7280">80</text>
+                                <text x="20" y="105" fontSize="12" fill="#6B7280">90</text>
+                                <text x="20" y="55" fontSize="12" fill="#6B7280">100</text>
+
+                                {/* Data points */}
+                                <circle cx="40" cy="120" r="4" fill="#2563EB" />
+                                <circle cx="200" cy="90" r="4" fill="#2563EB" />
+                                <circle cx="350" cy="85" r="4" fill="#2563EB" />
+                                <circle cx="560" cy="65" r="4" fill="#2563EB" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Features */}
+            <section className="py-24">
+                <div className="max-w-7xl mx-auto px-6">
+                    <h2 className="text-3xl md:text-4xl font-medium text-gray-900 mb-16 flex items-center gap-3">
+                        <BarChart3 className="h-7 w-7 text-blue-600" />
+                        Built for real accountability
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-16">
+                        <div className="lg:col-span-2 border-r border-gray-200 pr-12">
+                            <div className="space-y-8">
+                                <div className="pb-8 border-b border-gray-200 flex items-center gap-2">
+                                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                                    <h3 className="text-xl font-medium text-gray-900">AI-powered Vouch Score</h3>
+                                </div>
+                                <div className="pb-8 border-b border-gray-200 flex items-center gap-2">
+                                    <Lock className="h-5 w-5 text-blue-600" />
+                                    <h3 className="text-xl font-medium text-gray-900">4-hour lock rule</h3>
+                                </div>
+                                <div className="pb-8 border-b border-gray-200 flex items-center gap-2">
+                                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                                    <h3 className="text-xl font-medium text-gray-900">Session confirmation flow</h3>
+                                </div>
+                                <div className="pb-8 border-b border-gray-200 flex items-center gap-2">
+                                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                                    <h3 className="text-xl font-medium text-gray-900">Real-time messaging</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="lg:col-span-3 pl-12">
+                            <h3 className="text-2xl font-medium text-gray-900 mb-6 flex items-center gap-2">
+                                <Lock className="h-6 w-6 text-blue-600" />
+                                The 4-hour lock eliminates flaking
+                            </h3>
+                            <p className="text-lg text-gray-700 leading-relaxed mb-4">
+                                Four hours before any scheduled session, changes are locked. No rescheduling. No cancellations without penalty. This simple rule ensures students commit thoughtfully and show up consistently.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                                <Link href="/auth" className="px-8 py-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium text-lg shadow-lg hover:shadow-xl transition-all">
-                                    Start Free with Uni Email →
-                                </Link>
-                                <a href="#how-it-works" className="px-8 py-4 bg-white text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-lg shadow-lg hover:shadow-xl transition-all">
-                                    Watch How It Works (2 min)
-                                </a>
-                            </div>
-                            <div className="flex items-center space-x-6 text-sm text-gray-600">
-                                <div className="flex items-center">
-                                    <CheckCircle className="text-green-500 mr-2 h-4 w-4" />
-                                    No credit card required
-                                </div>
-                                <div className="flex items-center">
-                                    <CheckCircle className="text-green-500 mr-2 h-4 w-4" />
-                                    3 min setup
-                                </div>
-                                <div className="flex items-center">
-                                    <CheckCircle className="text-green-500 mr-2 h-4 w-4" />
-                                    Verified .ac.uk only
-                                </div>
-                            </div>
-                        </div>
-                        <div className="relative">
-                            <div className="bg-white rounded-2xl shadow-2xl p-6 animate-float">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-semibold">Live Study Sessions</h3>
-                                    <span className="text-green-500 text-sm flex items-center"><span className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></span> 247 Active Now</span>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                            ET
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-medium">Emma & James</p>
-                                            <p className="text-sm text-gray-600">EU Politics Review • 47 min</p>
-                                        </div>
-                                        <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                            In Progress
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                                            SP
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-medium">Sarah & Alex</p>
-                                            <p className="text-sm text-gray-600">Calculus Problem Set • Starting</p>
-                                        </div>
-                                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                            Joining
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg opacity-75">
-                                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold">
-                                            MJ
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-medium">Maya & Tom</p>
-                                            <p className="text-sm text-gray-600">Essay Writing • Completed</p>
-                                        </div>
-                                        <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                                            +2 pts each
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="absolute -bottom-4 -right-4 bg-yellow-100 rounded-lg p-4 shadow-lg animate-pulse">
-                                <p className="text-sm font-medium">🏆 Today's Top Voucher</p>
-                                <p className="text-xs text-gray-600">Sophie C. • 98% Score • 23 sessions</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Social Proof Bar */}
-            <section className="bg-white py-8 border-y">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                        <div>
-                            <div className="text-3xl font-bold text-primary">12,847</div>
-                            <div className="text-sm text-gray-600">Active UK Students</div>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-bold text-green-600">94%</div>
-                            <div className="text-sm text-gray-600">Show-Up Rate</div>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-bold text-purple-600">4.8/5</div>
-                            <div className="text-sm text-gray-600">Student Rating</div>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-bold text-orange-600">68</div>
-                            <div className="text-sm text-gray-600">UK Universities</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Problem/Solution Section */}
-            <section className="py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold mb-4 font-headline">The Study Partner Problem We All Know</h2>
-                        <p className="text-xl text-gray-600 font-body">Sound familiar?</p>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div className="space-y-4">
-                            <div className="flex items-start space-x-3">
-                                <XCircle className="text-red-500 mt-1 h-5 w-5 flex-shrink-0" />
-                                <p className="text-gray-700">"Let's study together!" ...but they never show up</p>
-                            </div>
-                            <div className="flex items-start space-x-3">
-                                <XCircle className="text-red-500 mt-1 h-5 w-5 flex-shrink-0" />
-                                <p className="text-gray-700">Library study groups turn into 2-hour chat sessions</p>
-                            </div>
-                            <div className="flex items-start space-x-3">
-                                <XCircle className="text-red-500 mt-1 h-5 w-5 flex-shrink-0" />
-                                <p className="text-gray-700">Discord servers full of distractions, no accountability</p>
-                            </div>
-                            <div className="flex items-start space-x-3">
-                                <XCircle className="text-red-500 mt-1 h-5 w-5 flex-shrink-0" />
-                                <p className="text-gray-700">Random online partners who disappear mid-session</p>
-                            </div>
-                        </div>
-                        <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-                            <h3 className="text-2xl font-bold mb-4 font-headline">Enter: The Vouch Score System</h3>
-                            <p className="mb-6 font-body">
-                                Our unique accountability system ensures you're matched with students who
-                                take their commitments seriously. Just like you.
+                            <p className="text-lg text-gray-700 leading-relaxed">
+                                Combined with our AI-powered Vouch Score system that tracks every session outcome, students learn that reliability pays off, literally, in better matches and higher scores.
                             </p>
-                            <ul className="space-y-3">
-                                <li className="flex items-center">
-                                    <Check className="mr-3 h-5 w-5" />
-                                    Start at 80 points, earn more by showing up
-                                </li>
-                                <li className="flex items-center">
-                                    <Check className="mr-3 h-5 w-5" />
-                                    Lose points for no-shows or late cancellations
-                                </li>
-                                <li className="flex items-center">
-                                    <Check className="mr-3 h-5 w-5" />
-                                    Match with partners at similar commitment levels
-                                </li>
-                            </ul>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* How It Works */}
-            <section id="how-it-works" className="bg-gray-50 py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold mb-4 font-headline">How Vouchly Works</h2>
-                        <p className="text-xl text-gray-600 font-body">Get matched and studying in under 3 minutes</p>
-                    </div>
-                    <div className="grid md:grid-cols-4 gap-8">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl font-bold text-primary">1</span>
-                            </div>
-                            <h3 className="font-semibold mb-2">Sign Up with Uni Email</h3>
-                            <p className="text-sm text-gray-600">Instant verification with your .ac.uk email. Set your schedule and study preferences.</p>
+            {/* Universities */}
+            <section className="py-16">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="max-w-4xl">
+                        <p className="text-base text-gray-600 mb-8">Active at UK universities including:</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-base text-gray-600 leading-8">
+                            <div>University of Oxford</div>
+                            <div>University of Cambridge</div>
+                            <div>Imperial College London</div>
+                            <div>London School of Economics</div>
+                            <div>University College London</div>
+                            <div>King's College London</div>
+                            <div>University of Edinburgh</div>
+                            <div>University of Manchester</div>
+                            <div>University of Bristol</div>
+                            <div>University of Warwick</div>
+                            <div>Durham University</div>
+                            <div>University of Glasgow</div>
+                            <div>University of Birmingham</div>
+                            <div>University of Leeds</div>
+                            <div>University of Sheffield</div>
+                            <div>And many more</div>
                         </div>
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl font-bold text-primary">2</span>
-                            </div>
-                            <h3 className="font-semibold mb-2">Get Matched by Algorithm</h3>
-                            <p className="text-sm text-gray-600">Our smart matching considers schedule, reliability score, and study style.</p>
-                        </div>
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl font-bold text-primary">3</span>
-                            </div>
-                            <h3 className="font-semibold mb-2">Confirm & Start Session</h3>
-                            <p className="text-sm text-gray-600">Both partners confirm start within 15 mins. Built-in video, no links needed.</p>
-                        </div>
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl font-bold text-primary">4</span>
-                            </div>
-                            <h3 className="font-semibold mb-2">Complete & Build Score</h3>
-                            <p className="text-sm text-gray-600">Finish your session, earn +2 Vouch points. Build your reputation!</p>
-                        </div>
-                    </div>
-                    <div className="text-center mt-12">
-                        <a href="#how-it-works" className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium">
-                            See Video Demo →
-                        </a>
                     </div>
                 </div>
             </section>
 
             {/* Features Grid */}
-            <section id="features" className="py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold mb-4 font-headline">Everything You Need for Productive Study Sessions</h2>
-                        <p className="text-xl text-gray-600 font-body">Designed by students, for students</p>
+            <section className="py-24 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-4xl font-medium text-gray-900 mb-4 flex items-center gap-2 justify-center">
+                            <BarChart3 className="h-7 w-7 text-blue-600" />
+                            Everything You Need for Productive Study Sessions
+                        </h2>
+                        <p className="text-2xl text-gray-600">
+                            Designed by students, for students
+                        </p>
                     </div>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                                <Video className="text-blue-600 h-6 w-6" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Built-in Video Sessions</h3>
-                            <p className="text-gray-600 mb-4">No more "send me the link" messages. Click join and you're in. Camera preferences respected.</p>
-                            <a href="#" className="text-primary hover:text-primary/80 font-medium">Learn more →</a>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="bg-white p-8 rounded-lg">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><Video className="h-5 w-5 text-blue-600" />Built-in Video Sessions</h3>
+                            <p className="text-lg text-gray-600 mb-4">
+                                No more "send me the link" messages. Click join and you're in. Camera preferences respected.
+                            </p>
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
+                                Learn more →
+                            </Link>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                                <Shield className="text-purple-600 h-6 w-6" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">4-Hour Lock Rule</h3>
-                            <p className="text-gray-600 mb-4">Sessions lock 4 hours before start. Reschedule early or commit. No last-minute flaking.</p>
-                            <a href="#" className="text-primary hover:text-primary/80 font-medium">Learn more →</a>
+                        <div className="bg-white p-8 rounded-lg">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><Lock className="h-5 w-5 text-blue-600" />4-Hour Lock Rule</h3>
+                            <p className="text-lg text-gray-600 mb-4">
+                                Sessions lock 4 hours before start. Reschedule early or commit. No last-minute flaking.
+                            </p>
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
+                                Learn more →
+                            </Link>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <LineChart className="text-green-600 h-6 w-6" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Progress Tracking</h3>
-                            <p className="text-gray-600 mb-4">See your study streaks, weekly goals, and Vouch Score history. Stay motivated!</p>
-                            <a href="#" className="text-primary hover:text-primary/80 font-medium">Learn more →</a>
+                        <div className="bg-white p-8 rounded-lg">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><TrendingUp className="h-5 w-5 text-blue-600" />Progress Tracking</h3>
+                            <p className="text-lg text-gray-600 mb-4">
+                                See your study streaks, weekly goals, and Vouch Score history. Stay motivated!
+                            </p>
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
+                                Learn more →
+                            </Link>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                                <Filter className="text-yellow-600 h-6 w-6" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Smart Filtering</h3>
-                            <p className="text-gray-600 mb-4">Filter by uni, subject, year, Vouch Score, study style. Find your perfect match.</p>
-                            <a href="#" className="text-primary hover:text-primary/80 font-medium">Learn more →</a>
+                        <div className="bg-white p-8 rounded-lg">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><Filter className="h-5 w-5 text-blue-600" />Smart Filtering</h3>
+                            <p className="text-lg text-gray-600 mb-4">
+                                Filter by uni, subject, year, Vouch Score, study style. Find your perfect match.
+                            </p>
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
+                                Learn more →
+                            </Link>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                                <Bell className="text-red-600 h-6 w-6" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Smart Reminders</h3>
-                            <p className="text-gray-600 mb-4">Calendar sync, 10-min warnings, completion prompts. Never miss a session.</p>
-                            <a href="#" className="text-primary hover:text-primary/80 font-medium">Learn more →</a>
+                        <div className="bg-white p-8 rounded-lg">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><Bell className="h-5 w-5 text-blue-600" />Smart Reminders</h3>
+                            <p className="text-lg text-gray-600 mb-4">
+                                Calendar sync, 10-min warnings, completion prompts. Never miss a session.
+                            </p>
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
+                                Learn more →
+                            </Link>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                                <Users className="text-indigo-600 h-6 w-6" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Study Styles</h3>
-                            <p className="text-gray-600 mb-4">Silent focus, quiet co-working, or motivational. Match your vibe.</p>
-                            <a href="#" className="text-primary hover:text-primary/80 font-medium">Learn more →</a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Testimonials */}
-            <section id="testimonials" className="bg-gradient-to-br from-blue-50 to-purple-50 py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold mb-4 font-headline">What UK Students Are Saying</h2>
-                        <p className="text-xl text-gray-600 font-body">Join thousands who've transformed their study habits</p>
-                    </div>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex mb-4">
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                            </div>
-                            <p className="text-gray-700 mb-4">"Finally, study partners who actually show up! My productivity has doubled since joining. The Vouch Score system is genius."</p>
-                            <div className="flex items-center">
-                                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                    SC
-                                </div>
-                                <div>
-                                    <p className="font-semibold">Sarah Chen</p>
-                                    <p className="text-sm text-gray-600">Medicine, Year 3 • UCL</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex mb-4">
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                            </div>
-                            <p className="text-gray-700 mb-4">"Was struggling with dissertation motivation. Now I have regular sessions with other PhD students. Game changer!"</p>
-                            <div className="flex items-center">
-                                <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                    JW
-                                </div>
-                                <div>
-                                    <p className="font-semibold">James Wilson</p>
-                                    <p className="text-sm text-gray-600">Economics PhD • LSE</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex mb-4">
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                                <Star className="text-yellow-400 fill-yellow-400" />
-                            </div>
-                            <p className="text-gray-700 mb-4">"Love the camera flexibility options. I can choose partners who match my preference. So much better than Zoom fatigue!"</p>
-                            <div className="flex items-center">
-                                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                    AP
-                                </div>
-                                <div>
-                                    <p className="font-semibold">Aisha Patel</p>
-                                    <p className="text-sm text-gray-600">Computer Science, Year 2 • Imperial</p>
-                                </div>
-                            </div>
+                        <div className="bg-white p-8 rounded-lg">
+                            <h3 className="text-xl font-medium text-gray-900 mb-4 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-blue-600" />Study Styles</h3>
+                            <p className="text-lg text-gray-600 mb-4">
+                                Silent focus, quiet co-working, or motivational. Match your vibe.
+                            </p>
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 text-base font-medium">
+                                Learn more →
+                            </Link>
                         </div>
                     </div>
                 </div>
             </section>
-
-            {/* University Logos */}
-            <section className="py-12 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <p className="text-center text-gray-600 mb-8">Trusted by students from</p>
-                    <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-                        <span className="text-2xl font-bold text-gray-700">UCL</span>
-                        <span className="text-2xl font-bold text-gray-700">LSE</span>
-                        <span className="text-2xl font-bold text-gray-700">King's</span>
-                        <span className="text-2xl font-bold text-gray-700">Imperial</span>
-                        <span className="text-2xl font-bold text-gray-700">Oxford</span>
-                        <span className="text-2xl font-bold text-gray-700">Cambridge</span>
-                        <span className="text-sm text-gray-500">+62 more</span>
-                    </div>
-                </div>
-            </section>
-
-            {/* Pricing */}
-            <section id="pricing" className="py-20">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-4xl font-bold mb-4 font-headline">Simple, Transparent Pricing</h2>
-                    <p className="text-xl text-gray-600 mb-12 font-body">Always free for students. Seriously.</p>
-                    <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
-                        <h3 className="text-3xl font-bold mb-2">£0 / forever</h3>
-                        <p className="text-xl mb-8">For verified UK university students</p>
-                        <ul className="space-y-3 mb-8 text-left max-w-md mx-auto">
-                            <li className="flex items-center">
-                                <Check className="mr-3 h-5 w-5" />
-                                Unlimited study sessions
-                            </li>
-                            <li className="flex items-center">
-                                <Check className="mr-3 h-5 w-5" />
-                                All matching & filtering features
-                            </li>
-                            <li className="flex items-center">
-                                <Check className="mr-3 h-5 w-5" />
-                                Built-in video sessions
-                            </li>
-                            <li className="flex items-center">
-                                <Check className="mr-3 h-5 w-5" />
-                                Progress tracking & analytics
-                            </li>
-                            <li className="flex items-center">
-                                <Check className="mr-3 h-5 w-5" />
-                                Calendar integration
-                            </li>
-                            <li className="flex items-center">
-                                <Check className="mr-3 h-5 w-5" />
-                                Mobile-friendly access
-                            </li>
-                        </ul>
-                        <Link href="/dashboard" className="px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 font-medium">
-                            Get Started Free →
-                        </Link>
-                    </div>
-                    <p className="mt-8 text-sm text-gray-600">
-                        Funded by university partnerships. No ads, no data selling, no catch.
-                    </p>
-                </div>
-            </section>
-
-            {/* Final CTA */}
-            <section className="bg-gradient-to-br from-blue-600 to-purple-600 py-20 text-white">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-4xl font-bold mb-4 font-headline">Ready to Find Your Study Squad?</h2>
-                    <p className="text-xl mb-8 font-body">Join 12,000+ UK students already crushing their study goals</p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link href="/auth" className="px-8 py-4 bg-white text-primary rounded-lg hover:bg-gray-100 font-medium text-lg">
-                            Start Free with .ac.uk Email →
-                        </Link>
-                        <button className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white hover:text-primary font-medium text-lg transition-all">
-                            Questions? Chat with Us
-                        </button>
-                    </div>
-                    <p className="mt-8 text-sm opacity-90">
-                        Average setup time: 2 min 47 sec • No payment info required
-                    </p>
-                </div>
-            </section>
-
-            {/* Footer */}
-            <footer className="bg-gray-900 text-gray-300 py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid md:grid-cols-4 gap-8">
-                        <div>
-                            <div className="flex items-center space-x-2 mb-4">
-                                <VouchlyLogo className="h-6 w-6 text-white" />
-                                <h3 className="text-xl font-bold text-white">Vouchly</h3>
-                            </div>
-                            <p className="text-sm">The accountability-first study platform for UK university students.</p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold text-white mb-4">Product</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><a href="#how-it-works" className="hover:text-white">How it Works</a></li>
-                                <li><a href="#features" className="hover:text-white">Features</a></li>
-                                <li><a href="#" className="hover:text-white">Universities</a></li>
-                                <li><a href="#testimonials" className="hover:text-white">Success Stories</a></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold text-white mb-4">Support</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                                <li><a href="#" className="hover:text-white">Contact Us</a></li>
-                                <li><a href="#" className="hover:text-white">Community Guidelines</a></li>
-                                <li><a href="#" className="hover:text-white">Safety</a></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold text-white mb-4">Connect</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><a href="#" className="hover:text-white">Blog</a></li>
-                                <li><a href="#" className="hover:text-white">Instagram</a></li>
-                                <li><a href="#" className="hover:text-white">TikTok</a></li>
-                                <li><a href="#" className="hover:text-white">For Universities</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div className="border-t border-gray-800 mt-8 pt-8 text-sm text-center">
-                        <p>&copy; 2024 Vouchly. All rights reserved. Made with ❤️ by students, for students.</p>
-                    </div>
-                </div>
-            </footer>
         </div>
     );
 }

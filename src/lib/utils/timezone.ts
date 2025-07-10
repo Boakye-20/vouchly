@@ -59,7 +59,7 @@ export function getTimeDifference(location: string): string {
 /**
  * Converts a time string to UTC based on UK time
  */
-export function parseUKTimeToUTC(timeString: string, referenceDate: Date = new Date()): Date {
+export function parseUKTimeToUTC(timeString: string): Date {
   // Implementation depends on your date parsing needs
   // This is a simplified version
   return new Date(timeString);

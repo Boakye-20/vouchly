@@ -27,11 +27,11 @@ export function StudyRequestModal({ partner, currentUser, onClose }: StudyReques
     });
 
     const calculateMatchBreakdown = () => {
-        let schedulePoints = partner.matchScore > 20 ? 20 : partner.matchScore;
-        let vouchPoints = 30;
-        let atmospherePoints = 10;
-        let coursePoints = partner.subjectGroup === currentUser?.subjectGroup ? 15 : 5;
-        let uniPoints = partner.university === currentUser?.university ? 5 : 0;
+        const schedulePoints = partner.matchScore > 20 ? 20 : partner.matchScore;
+        const vouchPoints = 30;
+        const atmospherePoints = 10;
+        const coursePoints = partner.subjectGroup === currentUser?.subjectGroup ? 15 : 5;
+        const uniPoints = partner.university === currentUser?.university ? 5 : 0;
         const total = Math.round(partner.matchScore || 80);
 
         return {
@@ -203,6 +203,7 @@ export function StudyRequestModal({ partner, currentUser, onClose }: StudyReques
                                     onChange={(e) => setRequestData({ ...requestData, duration: e.target.value })}
                                     className="w-full px-3 py-2 border rounded-lg"
                                 >
+                                    <option value="30 minutes">30 minutes</option>
                                     <option value="60 minutes">60 minutes</option>
                                     <option value="90 minutes">90 minutes</option>
                                     <option value="120 minutes">120 minutes</option>

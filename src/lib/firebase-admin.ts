@@ -1,6 +1,10 @@
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
 
 // Debug: Check if env vars are loaded
 console.log('Firebase Admin Config Check:', {
@@ -10,6 +14,7 @@ console.log('Firebase Admin Config Check:', {
 });
 
 let adminDb: ReturnType<typeof getFirestore>;
+let adminAuth: ReturnType<typeof getAuth>;
 
 try {
     const firebaseAdminConfig = {
@@ -23,11 +28,11 @@ try {
     // Initialize Firebase Admin
     const app = getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
     adminDb = getFirestore(app);
-
+    adminAuth = getAuth(app);
     console.log('Firebase Admin initialized successfully');
 } catch (error) {
     console.error('Firebase Admin initialization error:', error);
     throw error;
 }
 
-export { adminDb };
+export { adminDb, adminAuth };

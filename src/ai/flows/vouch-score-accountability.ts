@@ -75,6 +75,10 @@ const adjustVouchScoreFlow = ai.defineFlow(
                     reason = `Session rescheduled`;
                 }
                 break;
+            case 'CANCELLED_WITH_NOTICE':
+                pointsChange = 0;
+                reason = `Cancelled session with notice (life happens)`;
+                break;
             case 'CANCELLED_LOCKED_IN':
                 pointsChange = -10;
                 reason = `Cancelled locked-in session (no-show)`;

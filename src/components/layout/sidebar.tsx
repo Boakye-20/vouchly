@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
+import { VouchlyLogo } from '@/components/icons';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -30,8 +31,8 @@ export function Sidebar() {
         <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64">
             {/* Logo */}
             <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
-                <div className="text-2xl">✅</div>
-                <h1 className="text-xl font-bold text-purple-700">Vouchly</h1>
+                <VouchlyLogo className="h-8 w-8 text-blue-600" />
+                <h1 className="text-xl font-semibold tracking-tight text-gray-900">Vouchly</h1>
             </div>
 
             {/* Navigation */}
@@ -45,7 +46,7 @@ export function Sidebar() {
                             className={cn(
                                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                                 isActive
-                                    ? 'bg-purple-50 text-purple-700'
+                                    ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                             )}
                         >

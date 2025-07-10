@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,14 @@ export function LoginForm() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const searchParams = useSearchParams();
+
+    // Show deleted account message if redirected after deletion
+    useEffect(() => {
+        if (searchParams?.get('accountDeleted') === '1') {
+            setError('This account was deleted. Please sign up again.');
+        }
+    }, [searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,6 +42,9 @@ export function LoginForm() {
             let errorMessage = 'An unexpected error occurred. Please try again.';
             switch (error.code) {
                 case 'auth/user-not-found':
+                case 'auth/user-disabled':
+                    errorMessage = 'This account was deleted. Please sign up again.';
+                    break;
                 case 'auth/invalid-email':
                     errorMessage = 'No account found with this email address.';
                     break;
@@ -70,8 +81,7 @@ export function LoginForm() {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="password">Password</Label>
-                        {/* This is the corrected link */}
-                        <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                        <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
                             Forgot password?
                         </Link>
                     </div>
@@ -87,7 +97,7 @@ export function LoginForm() {
                 {error && (
                     <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>
                 )}
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitting}>
                     {isSubmitting ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (

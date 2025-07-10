@@ -1,20 +1,69 @@
 # **App Name**: Vouchly
 
-## Core Features:
+## Core Features
 
-- Partner Browsing and Filtering: Browse potential study partners, filtered by university, subject, Vouch Score, and study atmosphere. A student can 'hide' another student from future browsing.
-- Session Scheduling: Request and schedule study sessions with potential partners, specifying date, time, duration, and focus topic.
-- User statistics: Display of user statistics including Vouch score, session completed count, number of scheduled sessions, weekly progress toward sessions, along with history.
-- Automated Vouch Score Accountability: Real-time Vouch score updates by tool logic for completed study sessions. Each student gets rewarded or penalized based on session start and completion confirmations. LLM will use logic to award and remove points automatically.
-- Real-time Notifications: Real-time notifications to alert students of various changes: new study requests, accepted requests, and incoming messages. Notifications delivered via Websockets.
-- In-session Messaging: Send messages inside of the study group about the topic.
+- **Authentication & Onboarding:**
+  - University email (.ac.uk) validation
+  - Email verification and password reset
+  - 3-step profile setup (Academic → Availability → Preferences)
+  - Dashboard access blocked until profile is complete
 
-## Style Guidelines:
+- **Partner Browsing & Filtering:**
+  - Browse/filter by university, subject, Vouch Score, study atmosphere
+  - Hide users from future browsing
 
-- Primary color: Indigo (#4B0082), embodying intellect and trust, fitting for an academic setting.
-- Background color: Light lavender (#E6E6FA), providing a soft, focused backdrop that reduces distraction.
-- Accent color: Gold (#FFD700) for highlighting important elements, creating a sense of achievement and value.
-- Font pairing: 'Belleza' (sans-serif) for headlines to bring personality, paired with 'Alegreya' (serif) for body text.
-- Code font: 'Source Code Pro' for displaying code snippets.
-- Use modern, minimalist icons related to studying, collaboration, and achievement.
-- Subtle transitions and animations to provide feedback on user interactions and highlight changes, enhancing user experience without being distracting.
+- **Session Scheduling & Management:**
+  - Request, schedule, reschedule, and cancel sessions
+  - 4-hour rule for rescheduling/cancellation
+  - Undo cancellation (5-minute window)
+  - Session status tracking and booking conflict detection
+  - Timezone handling and confirmation flows
+
+- **Vouch Score System:**
+  - AI-powered, event-based trust score (0-100)
+  - Penalties/rewards for session behaviors (no-show, completion, reschedule, etc.)
+  - Score history and transparency (all changes logged)
+  - Manual adjustment by admin
+
+- **Matching Algorithm:**
+  - Weighted by schedule overlap (40%), Vouch Score similarity (30%), subject (15%), study atmosphere (10%), university (5%)
+  - Gold/Silver/Bronze/Low match tiers
+
+- **Messaging:**
+  - In-app, real-time messaging with file/image sharing
+  - Read/unread status and message history
+
+- **Notifications:**
+  - Real-time (websockets) for requests, updates, and messages
+  - Toast notifications and planned email support
+
+- **Admin & Analytics:**
+  - User management, search/filter, account status, Vouch Score adjustment
+  - Analytics: user growth, session rates, Vouch Score distribution, usage stats
+  - System health checks and scheduled jobs
+
+- **Video Sessions:**
+  - Embedded Jitsi video calls with Vouchly branding
+  - Session timer, partner status, attendance tracking, and summary
+
+- **Compliance & Security:**
+  - GDPR, privacy policy, terms, cookie consent, data export/deletion
+  - Strict Firestore rules, rate limiting, XSS/CSRF protection, encryption
+
+- **UI/UX:**
+  - Responsive, mobile-optimized, accessible (WCAG 2.1 in progress)
+  - Modern, minimalist icons and branding
+  - Subtle transitions and feedback animations
+
+## AI Technology Stack
+
+- **Google Gemini 2.0 Flash**: AI for Vouch Score and session logic
+- **Genkit AI Framework**: Orchestration and flow management
+
+## Style Guidelines
+
+- Primary: Indigo (#4B0082)
+- Background: Light lavender (#E6E6FA)
+- Accent: Gold (#FFD700)
+- Fonts: 'Belleza' (headlines), 'Alegreya' (body), 'Source Code Pro' (code)
+- Modern, minimalist icons and subtle animations

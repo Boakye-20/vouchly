@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { rescheduleSessionAction } from "@/lib/actions";
+import { sessionEvents } from '@/lib/google-analytics';
 
 interface RescheduleModalProps {
     isOpen: boolean;

@@ -19,16 +19,11 @@ interface AvailabilityDay {
 }
 
 export function PartnerProfileModal({ partner, currentUser, onClose, onSendRequest }: PartnerProfileModalProps) {
-    const getVouchScoreRank = (score: number) => {
-        if (score >= 90) return { rank: 'Gold', color: 'text-yellow-700 bg-yellow-50 border-yellow-400' };
-        if (score >= 75) return { rank: 'Silver', color: 'text-gray-700 bg-gray-100 border-gray-400' };
-        return { rank: 'Bronze', color: 'text-orange-800 bg-orange-50 border-orange-400' };
-    };
-
     const getMatchRank = (score: number) => {
         if (score >= 80) return { rank: 'Gold', color: 'text-yellow-700 bg-yellow-50 border-yellow-400' };
-        if (score >= 65) return { rank: 'Silver', color: 'text-gray-700 bg-gray-100 border-gray-400' };
-        return { rank: 'Bronze', color: 'text-orange-800 bg-orange-50 border-orange-400' };
+        if (score >= 60) return { rank: 'Silver', color: 'text-gray-700 bg-gray-100 border-gray-400' };
+        if (score >= 40) return { rank: 'Bronze', color: 'text-orange-800 bg-orange-50 border-orange-400' };
+        return { rank: 'Low', color: 'text-orange-700 bg-orange-50 border-orange-400' };
     };
 
     const calculateScheduleOverlap = (userAvail: any, partnerAvail: any): number => {
@@ -118,14 +113,16 @@ export function PartnerProfileModal({ partner, currentUser, onClose, onSendReque
     };
 
     const availability = getAvailabilityDisplay(partner.availability);
-    const vouchRankInfo = getVouchScoreRank(partner.vouchScore || 80);
     const matchRankInfo = getMatchRank(partner.matchScore || 50);
+
+    // Debug: Log the match score and computed rank
+    console.log('[VOUCH DEBUG] Partner matchScore:', partner.matchScore, 'Computed rank:', getMatchRank(partner.matchScore || 50).rank);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-[#FFF5E6] rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
                 {/* Header */}
-                <div className="relative bg-purple-800 p-6 text-white">
+                <div className="relative bg-primary text-primary-foreground p-6">
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
@@ -164,20 +161,47 @@ export function PartnerProfileModal({ partner, currentUser, onClose, onSendReque
 
                     <TabsContent value="overview" className="space-y-4 mt-6">
                         {/* Match Compatibility Breakdown */}
-                        <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="font-medium mb-3 text-gray-900">
+                        <div className="bg-[#FFF5E6] rounded-lg p-4">
+                            <h3 className="font-bold mb-3 text-gray-900">
                                 Why You're a {matchRankInfo.rank} Match
                             </h3>
                             <div className="space-y-2">
-                                {getMatchReasons(currentUser, partner).map((reason, index) => (
-                                    <div key={index} className="flex items-start gap-2 text-sm">
-                                        <span className="text-purple-600 mt-0.5">•</span>
-                                        <div className="flex-1">
-                                            <span className="font-medium text-gray-900">{reason.label}:</span>
-                                            <span className="text-gray-700 ml-1">{reason.value}</span>
+                                {(() => {
+                                    const reasons = getMatchReasons(currentUser, partner);
+                                    const matchScore = partner.matchScore || 50;
+
+                                    if (reasons.length === 0) {
+                                        if (matchScore < 40) {
+                                            return <div className="text-gray-700">Limited compatibility due to different schedules, study preferences, or academic backgrounds.</div>;
+                                        }
+                                        return <div className="text-gray-700">You're a {matchRankInfo.rank} Match based on your profiles.</div>;
+                                    }
+
+                                    const topReasons = reasons.slice(0, 2);
+                                    const reasonText = topReasons.map((r, i) => {
+                                        if (r.label === 'Same University') return `you both study at ${r.value}`;
+                                        if (r.label === 'Similar Vouch Score') return 'you have similar reliability scores';
+                                        if (r.label === 'Same Subject') return `you both study ${r.value}`;
+                                        if (r.label === 'Same Faculty') return `you are in the same faculty (${r.value})`;
+                                        if (r.label === 'Same Study Style') return `you both prefer ${r.value.toLowerCase()}`;
+                                        if (r.label === 'Good Schedule Overlap') return 'your schedules overlap well';
+                                        return r.label.toLowerCase();
+                                    }).join(' and ');
+
+                                    if (matchScore < 40) {
+                                        return (
+                                            <div className="text-gray-700 font-normal">
+                                                While {reasonText}, overall compatibility is limited. Try adjusting your filters for better matches.
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div className="text-gray-700 font-normal">
+                                            You're a {matchRankInfo.rank} Match because {reasonText}.
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -194,83 +218,80 @@ export function PartnerProfileModal({ partner, currentUser, onClose, onSendReque
                         {/* Study Details */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <h4 className="text-sm font-medium text-gray-600 mb-1">Faculty</h4>
-                                <p className="text-gray-900">{partner.faculty || 'Not specified'}</p>
+                                <h4 className="text-lg font-bold mb-1">Faculty</h4>
+                                <p className="text-base text-gray-900">{partner.faculty || 'Not specified'}</p>
                             </div>
-
                             <div>
-                                <h4 className="text-sm font-medium text-gray-600 mb-1">Subject</h4>
-                                <p className="text-gray-900">{partner.subject || 'Not specified'}</p>
+                                <h4 className="text-lg font-bold mb-1">Subject</h4>
+                                <p className="text-base text-gray-900">{partner.subject || 'Not specified'}</p>
                             </div>
-
                             <div>
-                                <h4 className="text-sm font-medium text-gray-600 mb-1">Study Style</h4>
-                                <p className="text-gray-900">{partner.coStudyingAtmosphere || 'Not specified'}</p>
+                                <h4 className="text-lg font-bold mb-1">Study Style</h4>
+                                <p className="text-base text-gray-900">{partner.coStudyingAtmosphere || 'Not specified'}</p>
                             </div>
-
                             <div>
-                                <h4 className="text-sm font-medium text-gray-600 mb-1">Camera Preference</h4>
-                                <p className="text-gray-900">{partner.cameraPreference || 'Not specified'}</p>
+                                <h4 className="text-lg font-bold mb-1">Camera Preference</h4>
+                                <p className="text-base text-gray-900">{partner.cameraPreference || 'Not specified'}</p>
                             </div>
                         </div>
                     </TabsContent>
 
                     <TabsContent value="schedule" className="mt-6">
-                        <h3 className="font-medium mb-4 text-gray-900">Available Times</h3>
-
-                        {availability.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-3">
-                                {availability.map((item: AvailabilityDay) => (
-                                    <div key={item.day} className="border rounded-lg p-3">
-                                        <h4 className="font-medium text-gray-900 mb-2">{item.day}</h4>
-                                        <div className="flex gap-2">
-                                            {item.times.map((time: string) => (
-                                                <span key={time} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-md text-sm capitalize">
-                                                    {time}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="p-4">
+                            <h3 className="font-bold mb-3 text-gray-900">Available Times</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr>
+                                            <th className="text-left p-2 text-base font-bold">Day</th>
+                                            <th className="text-center p-2 text-base font-bold">Morning<br /><span className="text-sm font-normal">9am-12pm</span></th>
+                                            <th className="text-center p-2 text-base font-bold">Afternoon<br /><span className="text-sm font-normal">12pm-5pm</span></th>
+                                            <th className="text-center p-2 text-base font-bold">Evening<br /><span className="text-sm font-normal">5pm-9pm</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                                            <tr key={day} className="border-t">
+                                                <td className="p-2 font-medium">{day}</td>
+                                                {['morning', 'afternoon', 'evening'].map(time => (
+                                                    <td key={time} className="text-center p-2">
+                                                        {partner.availability?.[day]?.[time] ? (
+                                                            <span className="inline-block bg-purple-100 text-purple-700 rounded px-3 py-1 text-xs font-bold">{time.charAt(0).toUpperCase() + time.slice(1)}</span>
+                                                        ) : null}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        ) : (
-                            <p className="text-gray-500 text-center py-8">No availability information provided</p>
-                        )}
+                        </div>
                     </TabsContent>
 
-                    <TabsContent value="stats" className="mt-6">
-                        <h3 className="font-medium mb-4 text-gray-900">Session Statistics</h3>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <div className="text-sm text-gray-600 mb-1">Total Sessions</div>
-                                    <div className="text-2xl font-semibold text-gray-900">{partner.sessionsCompleted || 0}</div>
-                                </div>
-
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <div className="text-sm text-gray-600 mb-1">Weekly Goal</div>
-                                    <div className="text-2xl font-semibold text-gray-900">{partner.weeklySessionGoal || 3}</div>
+                    <TabsContent value="stats" className="space-y-4 mt-6 bg-[#FFF5E6] rounded-lg p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100 flex flex-col items-start">
+                                <div className="text-lg font-bold mb-1">Vouch Score</div>
+                                <div className="flex items-center text-base font-semibold text-primary">
+                                    <svg className="h-5 w-5 mr-1 text-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5.236a2 2 0 0 0-1.106-1.789l-6-3.2a2 2 0 0 0-1.788 0l-6 3.2A2 2 0 0 0 4 5.236V12c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
+                                    {partner.vouchScore}%
                                 </div>
                             </div>
-
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-sm text-gray-600 mb-1">Member Since</div>
-                                <div className="text-lg font-medium text-gray-900">
-                                    {partner.joinedDate ?
-                                        new Date(partner.joinedDate).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-                                        : 'Recently joined'}
-                                </div>
+                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
+                                <div className="text-lg font-bold mb-1">Total Sessions</div>
+                                <div className={`text-base text-gray-900${(partner.totalSessions ?? 0) === 0 ? '' : ' font-semibold'}`}>{partner.totalSessions ?? 0}</div>
                             </div>
-
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-sm text-gray-600 mb-1">Partner Status</div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg font-medium text-gray-900">{vouchRankInfo.rank} Partner</span>
-                                    <Badge className={vouchRankInfo.color} variant="outline">
-                                        {partner.vouchScore} points
-                                    </Badge>
-                                </div>
+                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
+                                <div className="text-lg font-bold mb-1">Weekly Goal</div>
+                                <div className={`text-base text-gray-900${(partner.weeklySessionGoal ?? 0) === 0 ? '' : ' font-semibold'}`}>{partner.weeklySessionGoal ?? 0}</div>
+                            </div>
+                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
+                                <div className="text-lg font-bold mb-1">Member Since</div>
+                                <div className="text-base text-gray-900">{partner.memberSince ?? 'Recently joined'}</div>
+                            </div>
+                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
+                                <div className="text-lg font-bold mb-1">Partner Status</div>
+                                <div className="text-base text-gray-900">{matchRankInfo.rank} Partner</div>
                             </div>
                         </div>
                     </TabsContent>

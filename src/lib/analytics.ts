@@ -11,7 +11,7 @@ export async function logAnalyticsEvent({
   eventType: string;
   userId: string;
   sessionId?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }) {
   await adminDb.collection('analytics').add({
     eventType,
