@@ -287,12 +287,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex flex-col w-64 border-r bg-white flex-shrink-0">
-                <div className="flex h-16 items-center border-b px-6 bg-white">
-                    <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                        <VouchlyLogo className="h-6 w-6 text-blue-600" />
-                        <span className="text-xl font-semibold tracking-tight text-gray-900">Vouchly</span>
-                    </Link>
-                </div>
+                {/* Remove the logo and text from here, only keep navigation and sign out */}
                 <nav className="flex-1 space-y-1 p-4">
                     {navItems.map((item) => (
                         <NavItem key={item.href} item={item} />
@@ -314,16 +309,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             <div className="flex flex-1 flex-col">
-                <header className="flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6">
-                    <div className="flex items-center gap-2 sm:hidden">
-                        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}><Menu className="h-5 w-5" /></Button>
-                        <Link href="/dashboard" className="flex items-center gap-2"><VouchlyLogo className="h-6 w-6 text-blue-600" /><span className="text-xl font-semibold tracking-tight text-gray-900">Vouchly</span></Link>
-                    </div>
-                    <div className="flex items-center gap-4 ml-auto">
-                        <NotificationBell />
-                    </div>
-                </header>
-                <main className="flex-1 overflow-auto w-full">
+                <main className="flex-1 overflow-auto w-full pt-2">
                     <div className="max-w-7xl mx-auto p-4 md:p-6 w-full">
                         {children}
                     </div>

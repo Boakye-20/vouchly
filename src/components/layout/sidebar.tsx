@@ -29,11 +29,7 @@ export function Sidebar() {
 
     return (
         <div className="flex flex-col h-full bg-white border-r border-gray-200 w-64">
-            {/* Logo */}
-            <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
-                <VouchlyLogo className="h-8 w-8 text-blue-600" />
-                <h1 className="text-xl font-semibold tracking-tight text-gray-900">Vouchly</h1>
-            </div>
+            {/* Remove the logo <div> here so only navigation remains */}
 
             {/* Navigation */}
             <nav className="flex-1 px-4 py-4 space-y-1">

@@ -1,10 +1,14 @@
 'use client';
 
-import { X, Calendar, Clock, Camera, Users, Trophy, TrendingUp, BookOpen, Target, MapPin, Mail, Award, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Calendar, Clock, Camera, Users, Trophy, TrendingUp, BookOpen, Target, MapPin, Mail, Award, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { format } from 'date-fns';
 
 interface PartnerProfileModalProps {
     partner: any;
@@ -19,6 +23,88 @@ interface AvailabilityDay {
 }
 
 export function PartnerProfileModal({ partner, currentUser, onClose, onSendRequest }: PartnerProfileModalProps) {
+    const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [canViewHistory, setCanViewHistory] = useState(false);
+
+    // Check if we can view session history
+    useEffect(() => {
+        const checkHistoryVisibility = async () => {
+            if (!partner.id || !currentUser?.uid) return;
+
+            try {
+                const partnerDoc = await getDoc(doc(db, 'users', partner.id));
+                if (partnerDoc.exists()) {
+                    const partnerData = partnerDoc.data();
+                    const visibility = partnerData.sessionHistoryVisibility || 'private';
+
+                    // Check if current user can view history
+                    let canView = false;
+                    if (visibility === 'public') {
+                        canView = true;
+                    } else if (visibility === 'study-partners') {
+                        // Check if current user has had sessions with this partner
+                        const sessionsQuery = query(
+                            collection(db, 'sessions'),
+                            where('participantIds', 'array-contains', currentUser.uid),
+                            where('participantIds', 'array-contains', partner.id),
+                            where('status', '==', 'completed'),
+                            limit(1)
+                        );
+                        const sessionsSnapshot = await getDocs(sessionsQuery);
+                        canView = !sessionsSnapshot.empty;
+                    }
+                    // 'private' means no one can view except the user themselves
+
+                    setCanViewHistory(canView);
+
+                    // If can view, fetch session history
+                    if (canView) {
+                        await fetchSessionHistory();
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking history visibility:', error);
+            }
+        };
+
+        checkHistoryVisibility();
+    }, [partner.id, currentUser?.uid]);
+
+    const fetchSessionHistory = async () => {
+        if (!partner.id) return;
+
+        setLoadingHistory(true);
+        try {
+            const sessionsQuery = query(
+                collection(db, 'sessions'),
+                where('participantIds', 'array-contains', partner.id),
+                where('status', '==', 'completed'),
+                orderBy('scheduledStartTime', 'desc'),
+                limit(10)
+            );
+
+            const snapshot = await getDocs(sessionsQuery);
+            const sessions = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    scheduledStartTime: data.scheduledStartTime?.toDate(),
+                    durationMinutes: data.durationMinutes,
+                    focusTopic: data.focusTopic,
+                    partnerNames: data.participantNames || {},
+                    status: data.status
+                };
+            });
+
+            setSessionHistory(sessions);
+        } catch (error) {
+            console.error('Error fetching session history:', error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
     const getMatchRank = (score: number) => {
         if (score >= 80) return { rank: 'Gold', color: 'text-yellow-700 bg-yellow-50 border-yellow-400' };
         if (score >= 60) return { rank: 'Silver', color: 'text-gray-700 bg-gray-100 border-gray-400' };
@@ -51,44 +137,40 @@ export function PartnerProfileModal({ partner, currentUser, onClose, onSendReque
     const getMatchReasons = (user: any, partner: any) => {
         const reasons = [];
 
-        // Same university (high priority)
-        if (user?.university === partner.university) {
-            reasons.push({ label: 'Same University', value: partner.university });
-        }
-
-        // Same subject (high priority)
-        if (user?.subject === partner.subject && partner.subject) {
-            reasons.push({ label: 'Same Subject', value: partner.subject });
-        } else if (user?.faculty === partner.faculty && partner.faculty) {
-            reasons.push({ label: 'Same Faculty', value: partner.faculty });
-        }
-
-        // Vouch score similarity
-        const vouchDiff = Math.abs((user?.vouchScore || 80) - (partner.vouchScore || 80));
-        if (vouchDiff <= 10) {
-            reasons.push({ label: 'Similar Vouch Score', value: `Both around ${partner.vouchScore}` });
-        }
-
-        // Weekly goal similarity
-        if (user?.weeklySessionGoal && partner.weeklySessionGoal) {
-            const goalDiff = Math.abs(user.weeklySessionGoal - partner.weeklySessionGoal);
-            if (goalDiff <= 1) {
-                reasons.push({ label: 'Similar Weekly Goals', value: `${partner.weeklySessionGoal} sessions/week` });
-            }
-        }
-
-        // Study atmosphere match
-        if (user?.coStudyingAtmosphere === partner.coStudyingAtmosphere && partner.coStudyingAtmosphere) {
-            reasons.push({ label: 'Same Study Style', value: partner.coStudyingAtmosphere });
-        }
-
-        // Schedule overlap
+        // 1. Schedule Overlap (40%)
         const scheduleOverlap = calculateScheduleOverlap(user?.availability, partner.availability);
         if (scheduleOverlap > 50) {
             reasons.push({ label: 'Good Schedule Overlap', value: `${Math.round(scheduleOverlap)}% matching times` });
         }
 
-        return reasons.slice(0, 4); // Show top 4 reasons
+        // 2. Vouch Score Similarity (30%)
+        const vouchDiff = Math.abs((user?.vouchScore || 80) - (partner.vouchScore || 80));
+        if (vouchDiff <= 5) {
+            reasons.push({ label: 'Very Similar Vouch Score', value: `Both ${user?.vouchScore || 80}-${partner.vouchScore}` });
+        } else if (vouchDiff <= 10) {
+            reasons.push({ label: 'Similar Vouch Score', value: `Both around ${partner.vouchScore}` });
+        } else if (vouchDiff <= 20) {
+            reasons.push({ label: 'Somewhat Similar Vouch Score', value: `Within 20 points` });
+        }
+
+        // 3. Subject Compatibility (15%)
+        if (user?.subject === partner.subject && partner.subject) {
+            reasons.push({ label: 'Same Subject', value: partner.subject });
+        } else if (user?.subjectGroup && partner.subjectGroup && user.subjectGroup === partner.subjectGroup) {
+            reasons.push({ label: 'Same Subject Group', value: partner.subjectGroup });
+        }
+
+        // 4. Study Atmosphere (10%)
+        if (user?.coStudyingAtmosphere === partner.coStudyingAtmosphere && partner.coStudyingAtmosphere) {
+            reasons.push({ label: 'Same Study Style', value: partner.coStudyingAtmosphere });
+        }
+
+        // 5. University Bonus (5%)
+        if (user?.university === partner.university) {
+            reasons.push({ label: 'Same University', value: partner.university });
+        }
+
+        return reasons;
     };
 
     const getAvailabilityDisplay = (availability: any): AvailabilityDay[] => {
@@ -120,48 +202,69 @@ export function PartnerProfileModal({ partner, currentUser, onClose, onSendReque
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#FFF5E6] rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-blue-100">
                 {/* Header */}
-                <div className="relative bg-primary text-primary-foreground p-6">
+                <div className="relative bg-white border-b border-blue-100 p-6">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+                        className="absolute top-4 right-4 text-slate-400 hover:text-blue-600 transition-colors"
+                        aria-label="Close"
                     >
                         <X className="h-5 w-5" />
                     </button>
 
                     <div className="flex items-center gap-6">
                         {/* Avatar */}
-                        <div className="w-20 h-20 bg-white/10 backdrop-blur rounded-full flex items-center justify-center text-2xl font-semibold border-2 border-white/20">
+                        <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center text-2xl font-semibold text-white border-4 border-blue-100">
                             {partner.name?.charAt(0).toUpperCase()}
                         </div>
 
                         {/* Basic Info */}
                         <div className="flex-1">
-                            <h2 className="text-2xl font-semibold mb-1">{partner.name}</h2>
-                            <p className="text-white/90">{partner.course} • {partner.yearOfStudy || 'Year 1'}</p>
-                            <p className="text-white/80 text-sm mt-1">{partner.university}</p>
+                            <h2 className="text-2xl font-semibold text-gray-900 mb-1">{partner.name}</h2>
+                            <p className="text-gray-700">{partner.course} • {partner.yearOfStudy || 'Year 1'}</p>
+                            <p className="text-blue-600 text-sm mt-1">{partner.university}</p>
                         </div>
 
-                        {/* Match Rank Badge */}
-                        <div className={`${matchRankInfo.color} px-4 py-2 rounded-md text-center border font-medium`}>
-                            <div className="text-sm">Match Level</div>
-                            <div className="text-lg font-semibold">{matchRankInfo.rank}</div>
+                        {/* Match Rank Badge - gold/silver/bronze with icon */}
+                        <div className="flex flex-col items-end">
+                            {(() => {
+                                let bg = 'bg-blue-600', border = 'border-blue-600', text = 'text-white', icon = null;
+                                if (matchRankInfo.rank === 'Gold') {
+                                    bg = 'bg-yellow-400'; border = 'border-yellow-400'; text = 'text-yellow-900';
+                                    icon = <svg className="inline h-5 w-5 mr-2 text-yellow-700" fill="currentColor" viewBox="0 0 20 20"><polygon points="10,2 12.59,7.36 18.51,8.09 14,12.26 15.18,18.02 10,15.1 4.82,18.02 6,12.26 1.49,8.09 7.41,7.36" /></svg>;
+                                } else if (matchRankInfo.rank === 'Silver') {
+                                    bg = 'bg-gray-300'; border = 'border-gray-300'; text = 'text-gray-800';
+                                    icon = <svg className="inline h-5 w-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" /></svg>;
+                                } else if (matchRankInfo.rank === 'Bronze') {
+                                    bg = 'bg-orange-300'; border = 'border-orange-300'; text = 'text-orange-900';
+                                    icon = <svg className="inline h-5 w-5 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><polygon points="10,3 17,17 3,17" /></svg>;
+                                }
+                                return (
+                                    <div className={`px-4 py-2 rounded-lg text-center border-2 font-bold shadow-lg text-base tracking-wide uppercase flex items-center gap-2 ${bg} ${border} ${text}`} style={{ letterSpacing: '0.05em' }}>
+                                        {icon}
+                                        Match Level: {matchRankInfo.rank}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
 
                 {/* Content Tabs */}
                 <Tabs defaultValue="overview" className="p-6">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4 bg-blue-50 border border-blue-100 rounded-lg mb-6">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="schedule">Schedule</TabsTrigger>
                         <TabsTrigger value="stats">Stats</TabsTrigger>
+                        {canViewHistory && (
+                            <TabsTrigger value="history">Session History</TabsTrigger>
+                        )}
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-4 mt-6">
+                    <TabsContent value="overview" className="space-y-4 mt-2">
                         {/* Match Compatibility Breakdown */}
-                        <div className="bg-[#FFF5E6] rounded-lg p-4">
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                             <h3 className="font-bold mb-3 text-gray-900">
                                 Why You're a {matchRankInfo.rank} Match
                             </h3>
@@ -268,33 +371,84 @@ export function PartnerProfileModal({ partner, currentUser, onClose, onSendReque
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="stats" className="space-y-4 mt-6 bg-[#FFF5E6] rounded-lg p-4">
+                    <TabsContent value="stats" className="space-y-4 mt-6">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100 flex flex-col items-start">
-                                <div className="text-lg font-bold mb-1">Vouch Score</div>
-                                <div className="flex items-center text-base font-semibold text-primary">
-                                    <svg className="h-5 w-5 mr-1 text-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5.236a2 2 0 0 0-1.106-1.789l-6-3.2a2 2 0 0 0-1.788 0l-6 3.2A2 2 0 0 0 4 5.236V12c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
-                                    {partner.vouchScore}%
+                            <div className="rounded-lg p-4 bg-white border border-blue-100 flex flex-col items-start">
+                                <div className="text-lg font-bold mb-1 text-blue-900">Vouch Score</div>
+                                <div className="flex items-center text-base font-semibold text-blue-700 gap-1">
+                                    <ShieldCheck className="h-5 w-5 text-blue-600" />
+                                    {partner.vouchScore}
                                 </div>
                             </div>
-                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
-                                <div className="text-lg font-bold mb-1">Total Sessions</div>
+                            <div className="rounded-lg p-4 bg-white border border-blue-100">
+                                <div className="text-lg font-bold mb-1 text-blue-900">Total Sessions</div>
                                 <div className={`text-base text-gray-900${(partner.totalSessions ?? 0) === 0 ? '' : ' font-semibold'}`}>{partner.totalSessions ?? 0}</div>
                             </div>
-                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
-                                <div className="text-lg font-bold mb-1">Weekly Goal</div>
+                            <div className="rounded-lg p-4 bg-white border border-blue-100">
+                                <div className="text-lg font-bold mb-1 text-blue-900">Weekly Goal</div>
                                 <div className={`text-base text-gray-900${(partner.weeklySessionGoal ?? 0) === 0 ? '' : ' font-semibold'}`}>{partner.weeklySessionGoal ?? 0}</div>
                             </div>
-                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
-                                <div className="text-lg font-bold mb-1">Member Since</div>
+                            <div className="rounded-lg p-4 bg-white border border-blue-100">
+                                <div className="text-lg font-bold mb-1 text-blue-900">Member Since</div>
                                 <div className="text-base text-gray-900">{partner.memberSince ?? 'Recently joined'}</div>
                             </div>
-                            <div className="rounded-lg p-4 bg-[#FFF5E6] border border-orange-100">
-                                <div className="text-lg font-bold mb-1">Partner Status</div>
+                            <div className="rounded-lg p-4 bg-white border border-blue-100">
+                                <div className="text-lg font-bold mb-1 text-blue-900">Partner Status</div>
                                 <div className="text-base text-gray-900">{matchRankInfo.rank} Partner</div>
                             </div>
                         </div>
                     </TabsContent>
+
+                    {canViewHistory && (
+                        <TabsContent value="history" className="space-y-4 mt-6">
+                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-100 mb-4">
+                                <h3 className="font-bold mb-2 text-gray-900">Recent Session History</h3>
+                                <p className="text-sm text-gray-600">
+                                    Showing {partner.name}'s completed sessions from the last 30 days.
+                                </p>
+                            </div>
+
+                            {loadingHistory ? (
+                                <div className="space-y-3">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="bg-white p-4 rounded-lg border border-gray-200 animate-pulse">
+                                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : sessionHistory.length > 0 ? (
+                                <div className="space-y-3">
+                                    {sessionHistory.map((session) => {
+                                        const partnerName = session.partnerNames[partner.id] || 'Study Partner';
+                                        const otherParticipants = Object.keys(session.partnerNames).filter(id => id !== partner.id);
+                                        const otherNames = otherParticipants.map(id => session.partnerNames[id]).join(', ');
+
+                                        return (
+                                            <div key={session.id} className="bg-white p-4 rounded-lg border border-gray-200">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="font-medium text-gray-900">
+                                                        Session with {otherNames}
+                                                    </h4>
+                                                    <span className="text-sm text-gray-500">
+                                                        {format(session.scheduledStartTime, 'MMM dd, yyyy')}
+                                                    </span>
+                                                </div>
+                                                <div className="text-sm text-gray-600">
+                                                    <p><strong>Topic:</strong> {session.focusTopic}</p>
+                                                    <p><strong>Duration:</strong> {session.durationMinutes} minutes</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>No recent sessions found.</p>
+                                </div>
+                            )}
+                        </TabsContent>
+                    )}
                 </Tabs>
 
                 {/* Send Request Button */}

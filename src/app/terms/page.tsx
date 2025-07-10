@@ -3,12 +3,26 @@ import { FileText, Shield, Users, Calendar, MessageSquare, AlertTriangle, CheckC
 
 export default function TermsPage() {
     return (
-        <div className="max-w-4xl mx-auto py-16 px-4">
-            <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
-            <p className="text-gray-600 mb-8">Last updated: January 2025</p>
-
-            <div className="space-y-8">
-                <section>
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+            <div className="flex justify-center">
+                <h1 className="text-3xl md:text-4xl font-light tracking-tight text-gray-900 border-b-4 border-blue-600 inline-block pb-2 mb-8 text-center">Terms of Service</h1>
+            </div>
+            <p className="text-gray-600 mb-8 mt-4 text-center">Last updated: July 2025</p>
+            <div className="max-w-3xl mx-auto mt-12">
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
+                    <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
+                    <p>Welcome to Vouchly. These Terms of Service ("Terms") govern your use of our platform and services. By using Vouchly, you agree to these Terms. Please read them carefully.</p>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
+                    <h2 className="text-2xl font-semibold mb-4">User Responsibilities</h2>
+                    <ul className="list-disc ml-6 mb-4">
+                        <li>Provide accurate and truthful information during registration and use of the platform.</li>
+                        <li>Respect other users and maintain a professional, safe environment.</li>
+                        <li>Do not share your account credentials or impersonate others.</li>
+                        <li>Comply with all applicable laws and university policies.</li>
+                    </ul>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Acceptance of Terms</h2>
                     <p className="text-gray-700 mb-4">
                         By accessing and using Vouchly ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
@@ -16,9 +30,9 @@ export default function TermsPage() {
                     <p className="text-gray-700">
                         These Terms of Service ("Terms") govern your use of Vouchly, a platform designed to connect UK university students for study partnerships and academic collaboration.
                     </p>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Eligibility and Registration</h2>
                     <div className="space-y-4">
                         <div>
@@ -42,9 +56,9 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Acceptable Use</h2>
                     <div className="space-y-4">
                         <div>
@@ -69,9 +83,9 @@ export default function TermsPage() {
                             </ul>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Vouch Score System</h2>
                     <div className="space-y-4">
                         <div>
@@ -98,9 +112,9 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Session Management</h2>
                     <div className="space-y-4">
                         <div>
@@ -124,9 +138,9 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Privacy and Data Protection</h2>
                     <div className="space-y-4">
                         <div>
@@ -150,9 +164,9 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Intellectual Property</h2>
                     <div className="space-y-4">
                         <div>
@@ -176,9 +190,9 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Limitation of Liability</h2>
                     <div className="space-y-4">
                         <div>
@@ -202,9 +216,9 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Account Termination</h2>
                     <div className="space-y-4">
                         <div>
@@ -228,23 +242,23 @@ export default function TermsPage() {
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Changes to Terms</h2>
                     <p className="text-gray-700">
                         We may update these Terms from time to time. We will notify you of any material changes by email and by posting the updated Terms on our website. Your continued use of Vouchly after such changes constitutes acceptance of the updated Terms.
                     </p>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Governing Law</h2>
                     <p className="text-gray-700">
                         These Terms are governed by and construed in accordance with the laws of England and Wales. Any disputes arising from these Terms or your use of Vouchly shall be subject to the exclusive jurisdiction of the courts of England and Wales.
                     </p>
-                </section>
+                </div>
 
-                <section>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
                     <p className="text-gray-700 mb-4">
                         If you have questions about these Terms of Service, please contact us:
@@ -254,7 +268,7 @@ export default function TermsPage() {
                         <p><strong>General Support:</strong> support@vouchly.com</p>
                         <p><strong>Privacy Questions:</strong> privacy@vouchly.com</p>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
     );

@@ -10,8 +10,61 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 // --- NEW: More icons for new stats and elements ---
-import { ArrowRight, BookOpen, Users, BarChart3, MessageSquare, Award, Flame, Clock, Lightbulb, Calendar, CheckCircle, TrendingUp, Target } from 'lucide-react';
+import { ArrowRight, BookOpen, Users, BarChart3, MessageSquare, Award, Flame, Clock, Lightbulb, Calendar, CheckCircle, TrendingUp, Target, AlertTriangle, XCircle, ShieldCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useRef } from 'react';
+
+function AnimatedNumber({ value }: { value: number }) {
+    const ref = useRef<HTMLSpanElement>(null);
+    useEffect(() => {
+        if (!ref.current) return;
+        let start = 0;
+        const end = value;
+        if (start === end) return;
+        let current = start;
+        const duration = 800;
+        const step = Math.ceil(end / (duration / 16));
+        const animate = () => {
+            current += step;
+            if (current > end) current = end;
+            if (ref.current) ref.current.textContent = String(current);
+            if (current < end) requestAnimationFrame(animate);
+        };
+        animate();
+    }, [value]);
+    return <span ref={ref}>{value}</span>;
+}
+
+function CircularProgress({ value, max, label }: { value: number; max: number; label?: string }) {
+    const radius = 36;
+    const stroke = 6;
+    const norm = Math.min(value / max, 1);
+    const circ = 2 * Math.PI * radius;
+    const offset = circ * (1 - norm);
+    return (
+        <svg width={90} height={90} className="block mx-auto">
+            <circle cx={45} cy={45} r={radius} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
+            <circle
+                cx={45}
+                cy={45}
+                r={radius}
+                stroke="#2563EB"
+                strokeWidth={stroke}
+                fill="none"
+                strokeDasharray={circ}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 0.7s cubic-bezier(.4,1.7,.7,1)' }}
+            />
+            <text x="50%" y="50%" textAnchor="middle" dy=".3em" fontSize="1.5rem" fill="#111827" fontWeight="bold">
+                {value}
+            </text>
+            {label && (
+                <text x="50%" y="68%" textAnchor="middle" fontSize=".85rem" fill="#6B7280">{label}</text>
+            )}
+        </svg>
+    );
+}
 
 // --- NEW: Helper function for dynamic greeting ---
 const getGreeting = (): string => {
@@ -39,6 +92,8 @@ export default function DashboardPage() {
     const [tip, setTip] = useState('');
     // --- NEW: State for online users count ---
     const [onlineUsersCount, setOnlineUsersCount] = useState(0);
+    // Add state for vouch score change this week
+    const [vouchScoreDeltaThisWeek, setVouchScoreDeltaThisWeek] = useState<number | null>(null);
 
     useEffect(() => {
         // --- NEW: Select a random tip on component mount ---
@@ -102,6 +157,23 @@ export default function DashboardPage() {
         });
         return () => unsubscribeAuth();
     }, []);
+
+    useEffect(() => {
+        // Calculate vouch score delta for this week if vouchScoreHistory is available
+        if (user?.vouchScoreHistory) {
+            const now = new Date();
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - now.getDay()); // Sunday as start of week
+            let delta = 0;
+            for (const entry of user.vouchScoreHistory) {
+                const entryDate = new Date(entry.date);
+                if (entryDate >= weekStart && entryDate <= now) {
+                    delta += entry.change;
+                }
+            }
+            setVouchScoreDeltaThisWeek(delta);
+        }
+    }, [user]);
 
     const UpNextCard = () => {
         if (nextSession) {
@@ -185,90 +257,143 @@ export default function DashboardPage() {
     const hoursFocused = Math.round(totalSessions * 1.5); // Assuming average session is 90 mins
 
     return (
-        <div className="max-w-7xl mx-auto px-6 py-16 space-y-12">
-            <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 flex items-center justify-center gap-3">
-                    <BarChart3 className="h-8 w-8 text-blue-600" />
-                    {getGreeting()}, {user.name?.split(' ')[0] || 'Student'}!
-                </h1>
-                <p className="text-xl text-gray-600 mt-4">Here's what's happening with your study sessions today.</p>
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+            <div className="flex justify-center">
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 border-b-4 border-blue-600 inline-block pb-2 mb-4 text-center">{getGreeting()}, {user.name?.split(' ')[0] || 'Student'}!</h1>
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <p className="text-lg text-gray-600 text-center mb-8">Here's what's happening with your study sessions today.</p>
+            {/* Two-column grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                {/* Main column */}
                 <div className="lg:col-span-2 space-y-8">
-                    <div className="bg-white p-8 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 mb-6">
+                    {/* Up Next Card */}
+                    <div className="relative bg-white p-8 rounded-xl border border-gray-200 shadow-sm overflow-hidden group transition-shadow hover:shadow-lg">
+                        {/* Move the blue bar to the bottom */}
+                        <div className="flex items-center gap-3 mb-4">
                             <Clock className="h-6 w-6 text-blue-600" />
                             <h2 className="text-2xl font-medium text-gray-900">Up Next</h2>
                         </div>
                         <UpNextCard />
+                        <div className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 animate-gradient-x" />
                     </div>
-
-                    <div className="bg-white p-8 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 mb-2">
+                    {/* Weekly Goal Progress */}
+                    <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
                             <Target className="h-6 w-6 text-blue-600" />
                             <h3 className="text-xl font-medium text-gray-900">Weekly Goal Progress</h3>
                         </div>
-                        <p className="text-base text-gray-600 mb-6">You've completed {sessionsThisWeek} of your {weeklyGoal} session goal this week.</p>
-                        <Progress value={Math.min((sessionsThisWeek / weeklyGoal) * 100, 100)} className="h-4" />
-                    </div>
-
-                    <div className="bg-white p-8 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Award className="h-6 w-6 text-blue-600" />
-                            <h3 className="text-xl font-medium text-gray-900">Vouch Score</h3>
+                        <p className="text-base text-gray-600 mb-4">You've completed {sessionsThisWeek} of your {weeklyGoal} session goal this week.</p>
+                        <Progress value={Math.min((sessionsThisWeek / weeklyGoal) * 100, 100)} className="h-3 bg-gray-100" />
+                        <div className="flex gap-2 mt-4 justify-center">
+                            {[...Array(weeklyGoal)].map((_, i) => {
+                                if (i < sessionsThisWeek) {
+                                    // Completed: green
+                                    return (
+                                        <span key={i} className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border bg-green-100 text-green-600 border-green-200">
+                                            <CheckCircle className="h-4 w-4 text-green-500" />
+                                        </span>
+                                    );
+                                } else if (i === sessionsThisWeek) {
+                                    // In progress: amber
+                                    return (
+                                        <span key={i} className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border bg-amber-100 text-amber-600 border-amber-200 animate-pulse">
+                                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                        </span>
+                                    );
+                                } else {
+                                    // Not started: grey
+                                    return (
+                                        <span key={i} className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold border bg-slate-100 text-slate-400 border-slate-200">
+                                            {i + 1}
+                                        </span>
+                                    );
+                                }
+                            })}
                         </div>
-                        <div className="flex items-center gap-4 mb-2">
-                            <span className="text-4xl font-bold text-gray-900">{vouchScore}</span>
-                            <span className="text-base text-gray-600">Your reliability rating</span>
-                        </div>
-                        <p className="text-base text-gray-600">Complete sessions to increase your score. No-shows or late cancellations will reduce it.</p>
                     </div>
-
-                    <div className="bg-white p-8 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Lightbulb className="h-6 w-6 text-blue-600" />
-                            <h3 className="text-xl font-medium text-gray-900">Productivity Tip</h3>
+                    {/* At a Glance Stats */}
+                    <div className="bg-blue-50 p-8 rounded-xl border border-blue-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <BarChart3 className="h-6 w-6 text-blue-600" />
+                            <h3 className="text-xl font-medium text-gray-900">At a Glance</h3>
                         </div>
-                        <p className="text-base text-gray-600">{tip}</p>
-                    </div>
-                </div>
-                <div className="space-y-8">
-                    <div className="bg-white p-8 rounded-lg border border-gray-200">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <Users className="h-6 w-6 text-blue-600" />
-                                <h3 className="text-xl font-medium text-gray-900">Quick Actions</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="flex flex-col items-center">
+                                <Users className="h-7 w-7 text-blue-600 mb-2" />
+                                <div className="text-2xl font-bold text-gray-900"><AnimatedNumber value={totalSessions} /></div>
+                                <div className="text-sm text-slate-500">Sessions</div>
                             </div>
-                            <span className="text-xs flex items-center text-gray-600">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5"></div>
-                                {onlineUsersCount} Partners Online
-                            </span>
+                            <div className="flex flex-col items-center">
+                                <Flame className="h-7 w-7 text-green-500 mb-2" />
+                                <div className="text-2xl font-bold text-gray-900"><AnimatedNumber value={studyStreak} /></div>
+                                <div className="text-sm text-slate-500">Streak</div>
+                            </div>
+                            <div className="flex flex-col items-center">
+                                <Clock className="h-7 w-7 text-slate-400 mb-2" />
+                                <div className="text-2xl font-bold text-gray-900"><AnimatedNumber value={hoursFocused} /></div>
+                                <div className="text-sm text-slate-500">Hours Focused</div>
+                            </div>
                         </div>
-                        <div className="space-y-3">
-                            <Link href="/dashboard/browse" className="block">
-                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
-                                    <Users className="mr-3 h-5 w-5 text-gray-400" /> Browse Partners
+                    </div>
+                </div>
+                {/* Sidebar */}
+                <aside className="space-y-8">
+                    {/* Vouch Score Widget - new style */}
+                    <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm flex flex-col items-center">
+                        <div className="mb-2 text-slate-500 text-sm">Your Vouch Score</div>
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-7 w-7 text-blue-600" />
+                            <span className="text-2xl font-bold text-blue-600">{vouchScore}</span>
+                        </div>
+                        {vouchScoreDeltaThisWeek !== null && vouchScoreDeltaThisWeek !== 0 && (
+                            <div className={`mt-2 text-xs font-medium flex items-center gap-1 ${vouchScoreDeltaThisWeek > 0 ? 'text-green-600' : vouchScoreDeltaThisWeek < 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                                {vouchScoreDeltaThisWeek > 0 && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                {vouchScoreDeltaThisWeek < 0 && <XCircle className="h-4 w-4 text-red-500" />}
+                                {vouchScoreDeltaThisWeek === 0 && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                                {vouchScoreDeltaThisWeek > 0 ? `+${vouchScoreDeltaThisWeek}` : vouchScoreDeltaThisWeek}
+                                this week
+                            </div>
+                        )}
+                    </div>
+                    {/* Productivity Tip */}
+                    <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 flex items-center gap-3">
+                        <Lightbulb className="h-6 w-6 text-amber-500 flex-shrink-0" />
+                        <div className="text-sm text-amber-900">{tip}</div>
+                    </div>
+                    {/* Quick Actions */}
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="text-base font-medium text-gray-900">Quick Actions</div>
+                            <span className="text-xs text-green-600">• {onlineUsersCount} online</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Link href="/dashboard/browse" className="group">
+                                <button className="w-full flex flex-col items-center justify-center p-3 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                    <Users className="h-5 w-5 text-blue-600 mb-1 group-hover:text-blue-700" />
+                                    <span className="text-xs font-medium text-gray-900">Browse</span>
                                 </button>
                             </Link>
-                            <Link href="/dashboard/sessions" className="block">
-                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
-                                    <BookOpen className="mr-3 h-5 w-5 text-gray-400" /> Manage My Sessions
+                            <Link href="/dashboard/sessions" className="group">
+                                <button className="w-full flex flex-col items-center justify-center p-3 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                    <BookOpen className="h-5 w-5 text-blue-600 mb-1 group-hover:text-blue-700" />
+                                    <span className="text-xs font-medium text-gray-900">Sessions</span>
                                 </button>
                             </Link>
-                            <Link href="/dashboard/messages" className="block">
-                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
-                                    <MessageSquare className="mr-3 h-5 w-5 text-gray-400" /> View Messages
+                            <Link href="/dashboard/messages" className="group">
+                                <button className="w-full flex flex-col items-center justify-center p-3 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                    <MessageSquare className="h-5 w-5 text-blue-600 mb-1 group-hover:text-blue-700" />
+                                    <span className="text-xs font-medium text-gray-900">Messages</span>
                                 </button>
                             </Link>
-                            <Link href="/dashboard/stats" className="block">
-                                <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-gray-700">
-                                    <BarChart3 className="mr-3 h-5 w-5 text-gray-400" /> See My Stats
+                            <Link href="/dashboard/stats" className="group">
+                                <button className="w-full flex flex-col items-center justify-center p-3 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                    <BarChart3 className="h-5 w-5 text-blue-600 mb-1 group-hover:text-blue-700" />
+                                    <span className="text-xs font-medium text-gray-900">Stats</span>
                                 </button>
                             </Link>
                         </div>
                     </div>
-                </div>
+                </aside>
             </div>
         </div>
     );

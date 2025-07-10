@@ -1,5 +1,12 @@
 # Vouchly: Business and Logic Overview
 
+> **Update July 2025:**
+> - Added a comprehensive settings system (dark mode, font size, language, privacy, notification, account recovery)
+> - Session history visibility: users can set their session history to public, study partners only, or private, enforced in the partner profile modal
+> - Data export: users can export their data as JSON from the settings page
+> - Accessibility improvements: font size scaling, dark mode, and language selection
+> - UI/UX: all legal and info pages now use consistent card-based layouts, and the global header adapts to authentication state
+
 ## What is Vouchly?
 Vouchly is a SaaS platform for UK university students to find reliable study partners, schedule sessions, and build academic accountability through a gamified, AI-powered trust system (Vouch Score). The platform features partner browsing, session management, in-app messaging, real-time notifications, and robust admin/analytics tools.
 
@@ -58,6 +65,14 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 - Responsive, mobile-optimized, accessible (WCAG 2.1 in progress)
 - Modern, minimalist icons and branding
 - Subtle transitions and feedback animations
+
+### 12. User Settings & Accessibility (NEW)
+- Global settings for dark mode, font size, language, privacy, notification, and account recovery
+- All settings are persisted to Firebase and applied instantly across the app
+- Accessibility: font size scaling, dark mode, and language selection for improved usability
+- Data export: users can download all their data as JSON from the settings page
+- Session history visibility: users can set their session history to public, study partners only, or private; this is enforced in the partner profile modal
+- UI/UX: all legal and info pages use consistent card-based layouts, and the global header adapts to authentication state
 
 ---
 
@@ -300,18 +315,6 @@ interface VouchScoreHistory {
 - **Data archival** for old sessions
 - **User retention analysis**
 - **Feature usage statistics**
-
----
-
-## Missing/Incomplete Features
-- Professional email templates (reminders, requests, verification, etc.)
-- Accessibility (WCAG 2.1) improvements
-- Internationalization (multi-language, currency, timezone)
-
-## Technical Debt
-- Code quality: strict TypeScript, test coverage, documentation
-- Security: audits, rate limiting, input validation, XSS/CSRF protection
-- DevOps: CI/CD, automated testing, deployment automation
 
 ---
 

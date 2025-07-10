@@ -156,8 +156,8 @@ export default function MessagesPage() {
     return (
         <div className="space-y-8 p-6">
             <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">Messages</h1>
-                <p className="text-xl text-gray-600 mt-4">View your conversations for scheduled sessions.</p>
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 inline-block border-b-4 border-blue-600 pb-2">Messages</h1>
+                <p className="text-xl text-slate-500 mt-4">View your conversations for scheduled sessions.</p>
             </div>
 
             {loading ? (
@@ -167,7 +167,7 @@ export default function MessagesPage() {
                     <div className="bg-white p-4 rounded-lg border border-gray-200 h-20 animate-pulse"></div>
                 </div>
             ) : conversations.length > 0 ? (
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="bg-blue-50 rounded-lg border border-blue-100">
                     <div className="space-y-1">
                         {conversations.map(convo => (
                             <Link href={`/dashboard/messages/${convo.sessionId}`} key={convo.sessionId}>
@@ -190,11 +190,11 @@ export default function MessagesPage() {
                                                 <Paperclip className="h-3 w-3 text-gray-400" />
                                             )}
                                         </div>
-                                        <p className={`text-sm truncate ${(convo.unreadCount || 0) > 0 ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+                                        <p className={`text-sm truncate ${(convo.unreadCount || 0) > 0 ? 'font-medium text-gray-900' : 'text-slate-500'}`}>
                                             {getMessagePreview(convo)}
                                         </p>
                                     </div>
-                                    <div className="text-xs text-gray-500 text-right">
+                                    <div className="text-xs text-slate-500 text-right">
                                         <p className="font-medium text-gray-700">{convo.sessionTopic}</p>
                                         {convo.lastMessage.timestamp && (
                                             <p>{formatDistanceToNow(convo.lastMessage.timestamp, { addSuffix: true })}</p>
@@ -206,12 +206,10 @@ export default function MessagesPage() {
                     </div>
                 </div>
             ) : (
-                <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
-                    <MessageSquareText className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-lg font-medium text-gray-900">No active conversations</h3>
-                    <p className="mt-1 text-sm text-gray-600">
-                        When a study session is scheduled, your chat with the partner will appear here.
-                    </p>
+                <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No conversations found</h3>
+                    <p className="text-slate-500">Try starting a session to begin chatting with a partner.</p>
                 </div>
             )}
             {hasMore && !loading && (

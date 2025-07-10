@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShieldCheck } from 'lucide-react';
 
 // --- NEW: Data structure for subject data, same as on setup page ---
 const SUBJECT_DATA = {
@@ -285,18 +286,18 @@ export default function BrowsePartnersPage() {
     return (
         <div className="p-6 space-y-8">
             <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">Browse Partners</h1>
-                <p className="text-xl text-gray-600 mt-4">Find the perfect study buddy to achieve your goals.</p>
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 inline-block border-b-4 border-blue-600 pb-2">Browse Partners</h1>
+                <p className="text-xl text-slate-500 mt-4">Find the perfect study buddy to achieve your goals.</p>
             </div>
 
             {/* Advanced Filters Bar */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                     {/* Faculty Filter */}
                     <div className="space-y-2">
                         <label className="text-base font-medium text-gray-900">Faculty</label>
                         <Select onValueChange={handleFacultyChange} value={filters.faculty}>
-                            <SelectTrigger className="border-gray-200 focus:border-blue-500">
+                            <SelectTrigger className="border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200">
                                 <SelectValue placeholder="Select Faculty..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -309,7 +310,7 @@ export default function BrowsePartnersPage() {
                     <div className="space-y-2">
                         <label className="text-base font-medium text-gray-900">Subject</label>
                         <Select onValueChange={(value) => setFilters(f => ({ ...f, subject: value }))} value={filters.subject} disabled={filters.faculty === 'All'}>
-                            <SelectTrigger className="border-gray-200 focus:border-blue-500">
+                            <SelectTrigger className="border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200">
                                 <SelectValue placeholder="Select Subject..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -344,14 +345,21 @@ export default function BrowsePartnersPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Any">Any Atmosphere</SelectItem>
-                                <SelectItem value="Silent & Independent">Silent & Independent</SelectItem>
-                                <SelectItem value="Quietly Co-working">Quietly Co-working</SelectItem>
+                                <SelectItem value="Silent & Independent">
+                                    <span className="text-blue-600">Silent & Independent</span>
+                                </SelectItem>
+                                <SelectItem value="Quietly Co-working">
+                                    <span className="text-amber-600">Quietly Co-working</span>
+                                </SelectItem>
+                                <SelectItem value="Motivational & Social">
+                                    <span className="text-green-600">Motivational & Social</span>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     {/* Vouch Score Slider */}
                     <div className="space-y-2">
-                        <label className="text-base font-medium text-gray-900">Min. Vouch Score: <span className="font-bold text-blue-600">{filters.minVouchScore}%</span></label>
+                        <label className="text-base font-medium text-gray-900">Min. Vouch Score: <span className="font-bold text-blue-600 flex items-center gap-1"><ShieldCheck className="inline h-4 w-4 text-blue-600" />{filters.minVouchScore}</span></label>
                         <input
                             type="range"
                             min="0"
@@ -359,12 +367,12 @@ export default function BrowsePartnersPage() {
                             step="5"
                             value={filters.minVouchScore}
                             onChange={(e) => setFilters(f => ({ ...f, minVouchScore: parseInt(e.target.value) }))}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            className="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
                         />
                     </div>
                 </div>
                 <div className="relative mt-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400" />
                     <Input
                         placeholder="Search by name or course..."
                         value={searchQuery}
@@ -389,14 +397,14 @@ export default function BrowsePartnersPage() {
                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
                     <div className="text-6xl mb-4">🔍</div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No partners found</h3>
-                    <p className="text-gray-600">Try adjusting your filters to find more study partners.</p>
+                    <p className="text-slate-500">Try adjusting your filters to find more study partners.</p>
                 </div>
             )}
 
             {hasMore && !loading && (
-                <button onClick={loadMorePartners} className="mt-4 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-base font-medium transition-colors">Load More</button>
+                <button onClick={loadMorePartners} className="mt-4 px-6 py-3 bg-gray-900 hover:bg-blue-900 text-white rounded-lg text-base font-medium transition-colors">Load More</button>
             )}
-            {loading && <div className="mt-4 text-center text-gray-600">Loading...</div>}
+            {loading && <div className="mt-4 text-center text-slate-500">Loading...</div>}
 
         </div>
     );

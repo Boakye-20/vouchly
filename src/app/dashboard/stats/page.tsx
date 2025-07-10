@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Calendar, Clock, Users, CheckCircle, AlertCircle, TrendingUp, Award, Target, Activity, Loader2, AlertCircle as AlertCircleIcon, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, Users, CheckCircle, AlertCircle, TrendingUp, Award, Target, Activity, Loader2, AlertCircle as AlertCircleIcon, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -154,8 +154,13 @@ export default function UserStatsPage() {
         {
             title: 'Vouch Score',
             value: stats.vouchScore,
-            icon: <Award className="h-4 w-4 text-purple-500" />,
-            description: 'Current score',
+            icon: (
+                <span className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-blue-600" />
+                    <span className="text-xl font-bold text-blue-600">{stats.vouchScore}</span>
+                </span>
+            ),
+            description: 'Vouch Score',
         },
         {
             title: 'Avg. Duration',
@@ -220,20 +225,23 @@ export default function UserStatsPage() {
         >
             <div className="space-y-8 p-6">
                 <div className="text-center">
-                    <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">My Statistics</h1>
-                    <p className="text-xl text-gray-600 mt-4">Track your study progress and achievements</p>
+                    <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 inline-block border-b-4 border-blue-600 pb-2">My Statistics</h1>
+                    <p className="text-xl text-slate-500 mt-4">Track your study progress and achievements</p>
                 </div>
 
-                {/* Metrics Grid */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    {metrics.map((metric, index) => (
-                        <div key={index} className="bg-white p-6 rounded-lg border border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-base font-medium text-gray-900">{metric.title}</h3>
-                                <div className="h-6 w-6">{metric.icon}</div>
-                            </div>
-                            <div className="text-3xl font-bold text-gray-900">{metric.value}</div>
-                            <p className="text-sm text-gray-600 mt-1">{metric.description}</p>
+                {/* Main Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {metrics.map((metric, i) => (
+                        <div key={metric.title} className="bg-blue-50 rounded-lg border border-blue-100 p-6 flex flex-col items-center shadow-sm">
+                            {metric.title === 'Vouch Score' ? (
+                                <div className="mb-2 flex items-center justify-center">
+                                    <ShieldCheck className="h-5 w-5 text-blue-600" />
+                                </div>
+                            ) : (
+                                <div className="mb-2">{metric.icon}</div>
+                            )}
+                            <span className="text-3xl font-bold text-gray-900 mb-2">{metric.title === 'Vouch Score' ? stats.vouchScore : metric.value}</span>
+                            <div className="text-sm text-slate-500">{metric.title === 'Vouch Score' ? 'Vouch Score' : metric.description}</div>
                         </div>
                     ))}
                 </div>

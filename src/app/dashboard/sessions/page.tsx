@@ -803,8 +803,8 @@ export default function SessionsPage() {
     return (
         <div className="space-y-8 p-6">
             <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">My Sessions</h1>
-                <p className="text-xl text-gray-600 mt-4">Manage and join your upcoming and past study sessions.</p>
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 inline-block border-b-4 border-blue-600 pb-2">My Sessions</h1>
+                <p className="text-xl text-slate-500 mt-4">Manage and join your upcoming and past study sessions.</p>
             </div>
 
             <div className="space-y-8">
@@ -824,7 +824,7 @@ export default function SessionsPage() {
                     <div className="space-y-6">
                         {activeTab === 'incoming' && (
                             incoming.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 bg-blue-50 rounded-lg border border-blue-100 p-4">
                                     {incoming.map(s => (
                                         <SessionCard
                                             key={s.id}
@@ -837,13 +837,13 @@ export default function SessionsPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                                    <p className="text-gray-600">No incoming requests.</p>
+                                    <p className="text-slate-500">No incoming requests.</p>
                                 </div>
                             )
                         )}
                         {activeTab === 'outgoing' && (
                             outgoing.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 bg-blue-50 rounded-lg border border-blue-100 p-4">
                                     {outgoing.map(s => (
                                         <SessionCard
                                             key={s.id}
@@ -856,13 +856,13 @@ export default function SessionsPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                                    <p className="text-gray-600">No outgoing requests.</p>
+                                    <p className="text-slate-500">No outgoing requests.</p>
                                 </div>
                             )
                         )}
                         {activeTab === 'scheduled' && (
                             scheduled.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 bg-blue-50 rounded-lg border border-blue-100 p-4">
                                     {scheduled.map(s => (
                                         <SessionCard
                                             key={s.id}
@@ -875,13 +875,13 @@ export default function SessionsPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                                    <p className="text-gray-600">No scheduled sessions. Go find a partner!</p>
+                                    <p className="text-slate-500">No scheduled sessions. Go find a partner!</p>
                                 </div>
                             )
                         )}
                         {activeTab === 'past' && (
                             past.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 bg-blue-50 rounded-lg border border-blue-100 p-4">
                                     {past.map(s => (
                                         <SessionCard
                                             key={s.id}
@@ -894,7 +894,7 @@ export default function SessionsPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                                    <p className="text-gray-600">No past sessions yet.</p>
+                                    <p className="text-slate-500">No past sessions yet.</p>
                                 </div>
                             )
                         )}
@@ -914,7 +914,7 @@ export default function SessionsPage() {
             {hasMore && !loading && (
                 <button onClick={loadMoreSessions} className="mt-4 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-base font-medium transition-colors">Load More</button>
             )}
-            {loading && <div className="mt-4 text-center text-gray-600">Loading...</div>}
+            {loading && <div className="mt-4 text-center text-slate-500">Loading...</div>}
         </div>
     );
 }

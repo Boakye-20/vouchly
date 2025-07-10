@@ -10,59 +10,35 @@ import { Button } from '@/components/ui/button';
 
 export default function PrivacyPage() {
     return (
-        <div className="max-w-4xl mx-auto py-16 px-4">
-            <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-            <p className="text-gray-600 mb-8">Last updated: January 2025</p>
-
-            <div className="space-y-8">
-                <section>
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+            <div className="flex justify-center">
+                <h1 className="text-3xl md:text-4xl font-light tracking-tight text-gray-900 border-b-4 border-blue-600 inline-block pb-2 mb-8 text-center">Privacy Policy</h1>
+            </div>
+            <p className="text-gray-600 mb-8 mt-4 text-center">Last updated: July 2025</p>
+            <div className="max-w-3xl mx-auto mt-12">
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
-                    <p className="text-gray-700 mb-4">
-                        Vouchly ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your personal information when you use our platform to connect with study partners.
-                    </p>
-                    <p className="text-gray-700">
-                        By using Vouchly, you agree to the collection and use of information in accordance with this policy. We are committed to transparency and will never sell your personal data.
-                    </p>
-                </section>
-
-                <section>
+                    <p className="mb-2">Vouchly ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your personal information when you use our platform to connect with study partners.</p>
+                    <p>By using Vouchly, you agree to the collection and use of information in accordance with this policy. We are committed to transparency and will never sell your personal data.</p>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Information We Collect</h2>
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Account Information</h3>
-                            <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                                <li>University email address (.ac.uk only)</li>
-                                <li>Full name</li>
-                                <li>University and course information</li>
-                                <li>Study preferences and schedule</li>
-                                <li>Profile picture (optional)</li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Usage Data</h3>
-                            <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                                <li>Session history and completion records</li>
-                                <li>Vouch Score changes and reasons</li>
-                                <li>Study partner interactions and messages</li>
-                                <li>Platform usage patterns and preferences</li>
-                                <li>Technical data (browser, device, IP address)</li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="text-lg font-medium mb-2">Session Data</h3>
-                            <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                                <li>Session scheduling and confirmation records</li>
-                                <li>Attendance and completion confirmations</li>
-                                <li>Rescheduling and cancellation history</li>
-                                <li>Session duration and participation metrics</li>
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-
-                <section>
+                    <h3 className="text-lg font-bold mb-2">Account Information</h3>
+                    <ul className="list-disc ml-6 mb-4">
+                        <li>University email address (.ac.uk only)</li>
+                        <li>Full name</li>
+                        <li>University and course information</li>
+                        <li>Study preferences and schedule</li>
+                        <li>Profile picture (optional)</li>
+                    </ul>
+                    <h3 className="text-lg font-bold mb-2">Usage Data</h3>
+                    <ul className="list-disc ml-6">
+                        <li>Session history and completion records</li>
+                        <li>Vouch Score changes and reasons</li>
+                        <li>Study partner interactions and messages</li>
+                    </ul>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">How We Use Your Information</h2>
                     <div className="space-y-4">
                         <div>
@@ -96,9 +72,8 @@ export default function PrivacyPage() {
                             </ul>
                         </div>
                     </div>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Data Sharing and Disclosure</h2>
                     <p className="text-gray-700 mb-4">
                         We are committed to protecting your privacy and will never sell your personal data. We may share your information only in the following limited circumstances:
@@ -132,9 +107,8 @@ export default function PrivacyPage() {
                             </p>
                         </div>
                     </div>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Data Security</h2>
                     <p className="text-gray-700 mb-4">
                         We implement industry-standard security measures to protect your personal information:
@@ -147,9 +121,8 @@ export default function PrivacyPage() {
                         <li>Regular backups and disaster recovery procedures</li>
                         <li>Compliance with GDPR and UK data protection regulations</li>
                     </ul>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Your Rights and Choices</h2>
                     <div className="space-y-4">
                         <div>
@@ -176,9 +149,8 @@ export default function PrivacyPage() {
                             </p>
                         </div>
                     </div>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Cookies and Tracking</h2>
                     <p className="text-gray-700 mb-4">
                         We use essential cookies to provide core platform functionality. We do not use tracking cookies or third-party advertising. Our cookie policy is simple and transparent:
@@ -189,23 +161,20 @@ export default function PrivacyPage() {
                         <li>Analytics cookies to improve our service (anonymised data only)</li>
                         <li>No advertising or tracking cookies</li>
                     </ul>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Children's Privacy</h2>
                     <p className="text-gray-700">
                         Vouchly is designed for university students and requires a verified university email address. We do not knowingly collect personal information from individuals under 18. If you believe we have collected such information, please contact us immediately.
                     </p>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Changes to This Policy</h2>
                     <p className="text-gray-700">
                         We may update this Privacy Policy from time to time. We will notify you of any material changes by email and by posting the updated policy on our website. Your continued use of Vouchly after such changes constitutes acceptance of the updated policy.
                     </p>
-                </section>
-
-                <section>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 mb-8">
                     <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
                     <p className="text-gray-700 mb-4">
                         If you have questions about this Privacy Policy or our data practices, please contact us:
@@ -215,7 +184,7 @@ export default function PrivacyPage() {
                         <p><strong>Data Protection Officer:</strong> dpo@vouchly.com</p>
                         <p><strong>General Support:</strong> support@vouchly.com</p>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
     );

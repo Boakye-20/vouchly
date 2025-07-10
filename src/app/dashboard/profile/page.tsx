@@ -14,7 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, User, Calendar, Settings, Trophy } from 'lucide-react';
+import { useSettings } from '@/contexts/settings-context';
+import { Loader2, Save, User, Calendar, Settings, Trophy, Download, Shield, Bell, Eye, EyeOff, Globe, Moon, Sun, Type, Languages, Mail, Phone } from 'lucide-react';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const SUBJECT_DATA = {
     "Business & Economics": [
@@ -116,11 +119,27 @@ const TIMES = ['morning', 'afternoon', 'evening'] as const;
 
 export default function ProfilePage() {
     const { toast } = useToast();
+    const { darkMode, fontSize, language, setDarkMode, setFontSize, setLanguage } = useSettings();
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [userData, setUserData] = useState<any>(null);
     const [editedData, setEditedData] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<'personal' | 'availability' | 'preferences'>('personal');
+    const [activeTab, setActiveTab] = useState<'personal' | 'availability' | 'preferences' | 'settings'>('personal');
+    const router = useRouter();
+    const [deleting, setDeleting] = useState(false);
+    const [exporting, setExporting] = useState(false);
+
+    // Local settings state for immediate updates
+    const [localSettings, setLocalSettings] = useState({
+        profileVisibility: 'public',
+        showOnlineStatus: true,
+        sessionHistoryVisibility: 'private',
+        emailNotifications: true,
+        sessionReminderTime: '30min',
+        backupEmail: '',
+        backupPhone: ''
+    });
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -130,12 +149,49 @@ export default function ProfilePage() {
                     const data = userDoc.data();
                     setUserData(data);
                     setEditedData(data);
+                    // Initialize local settings from user data
+                    setLocalSettings({
+                        profileVisibility: data.profileVisibility || 'public',
+                        showOnlineStatus: data.showOnlineStatus !== false, // default to true
+                        sessionHistoryVisibility: data.sessionHistoryVisibility || 'private',
+                        emailNotifications: data.emailNotifications !== false, // default to true
+                        sessionReminderTime: data.sessionReminderTime || '30min',
+                        backupEmail: data.backupEmail || '',
+                        backupPhone: data.backupPhone || ''
+                    });
                 }
             }
             setLoading(false);
         });
         return () => unsubscribe();
     }, []);
+
+    // Update settings in Firebase when they change
+    const updateSetting = async (key: string, value: any) => {
+        if (!auth.currentUser) return;
+
+        try {
+            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                [key]: value,
+                updatedAt: new Date()
+            });
+
+            // Update local state
+            setLocalSettings(prev => ({ ...prev, [key]: value }));
+
+            toast({
+                title: "Setting updated!",
+                description: "Your setting has been saved successfully.",
+            });
+        } catch (error: any) {
+            console.error('Setting update failed:', error);
+            toast({
+                title: "Error",
+                description: `Failed to update setting: ${error.message}`,
+                variant: "destructive",
+            });
+        }
+    };
 
     const toggleAvailability = (day: string, time: typeof TIMES[number]) => {
         const currentAvailability = editedData.availability || {};
@@ -169,6 +225,14 @@ export default function ProfilePage() {
                 coStudyingAtmosphere: editedData.coStudyingAtmosphere,
                 cameraPreference: editedData.cameraPreference,
                 weeklySessionGoal: editedData.weeklySessionGoal,
+                // Settings fields (handled by context)
+                profileVisibility: editedData.profileVisibility,
+                showOnlineStatus: editedData.showOnlineStatus,
+                sessionHistoryVisibility: editedData.sessionHistoryVisibility,
+                emailNotifications: editedData.emailNotifications,
+                sessionReminderTime: editedData.sessionReminderTime,
+                backupEmail: editedData.backupEmail,
+                backupPhone: editedData.backupPhone,
                 updatedAt: new Date()
             };
 
@@ -178,9 +242,6 @@ export default function ProfilePage() {
                     value !== undefined && value !== null && value !== ''
                 )
             );
-
-            console.log('Attempting to update profile with data:', filteredUpdateData);
-            console.log('Current user ID:', auth.currentUser.uid);
 
             await updateDoc(doc(db, 'users', auth.currentUser.uid), filteredUpdateData);
             setUserData(editedData);
@@ -207,13 +268,99 @@ export default function ProfilePage() {
         }
     };
 
+    const handleDataExport = async () => {
+        if (!auth.currentUser) return;
+
+        setExporting(true);
+        try {
+            // Get current user data
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            if (!userDoc.exists()) {
+                throw new Error('User data not found');
+            }
+
+            const userData = userDoc.data();
+
+            // Create export data
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                userId: auth.currentUser.uid,
+                userEmail: auth.currentUser.email,
+                profile: {
+                    ...userData,
+                    // Remove sensitive fields
+                    password: undefined,
+                    firebaseUid: undefined
+                },
+                settings: localSettings,
+                dataSummary: {
+                    accountCreated: userData?.createdAt,
+                    lastActive: userData?.updatedAt,
+                    profileComplete: userData?.profileComplete
+                }
+            };
+
+            // Create and download JSON file
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+                type: 'application/json'
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vouchly-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast({
+                title: "Data exported!",
+                description: "Your data has been downloaded successfully.",
+            });
+        } catch (error: any) {
+            console.error('Data export failed:', error);
+            toast({
+                title: "Export failed",
+                description: error.message || "Failed to export your data. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!auth.currentUser) return;
+        if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+        setDeleting(true);
+        try {
+            const token = await auth.currentUser.getIdToken();
+            const res = await fetch('/api/user/delete-account', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (res.ok) {
+                toast({ title: 'Account deleted', description: 'Your account and all data have been permanently deleted.' });
+                await signOut(auth);
+                router.push('/');
+            } else {
+                const data = await res.json();
+                toast({ title: 'Error', description: data.error || 'Failed to delete account.', variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to delete account.', variant: 'destructive' });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const hasChanges = JSON.stringify(userData) !== JSON.stringify(editedData);
 
     return (
         <div className="space-y-8 p-6">
             <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900">Profile</h1>
-                <p className="text-xl text-gray-600 mt-4">Manage your account settings and preferences.</p>
+                <h1 className="text-4xl md:text-5xl font-light tracking-tight text-gray-900 inline-block border-b-4 border-blue-600 pb-2">Profile</h1>
+                <p className="text-xl text-slate-500 mt-4">Manage your account settings and preferences.</p>
             </div>
 
             {loading ? (
@@ -227,7 +374,7 @@ export default function ProfilePage() {
                         <button onClick={() => setActiveTab('personal')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'personal' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Personal Info</button>
                         <button onClick={() => setActiveTab('availability')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'availability' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Availability</button>
                         <button onClick={() => setActiveTab('preferences')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'preferences' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Preferences</button>
-
+                        <button onClick={() => setActiveTab('settings')} className={`pb-4 border-b-2 text-base font-medium ${activeTab === 'settings' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-900'}`}>Settings</button>
                     </div>
 
                     <div className="space-y-8">
@@ -235,7 +382,7 @@ export default function ProfilePage() {
                             <div className="bg-white p-8 rounded-lg border border-gray-200">
                                 <div className="mb-6">
                                     <h3 className="text-2xl font-medium text-gray-900 mb-2">Personal Information</h3>
-                                    <p className="text-gray-600">Update your basic profile details.</p>
+                                    <p className="text-slate-500">Update your basic profile details.</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -245,7 +392,7 @@ export default function ProfilePage() {
                                             type="text"
                                             value={editedData.name || ''}
                                             onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             placeholder="Enter your full name"
                                         />
                                     </div>
@@ -258,7 +405,7 @@ export default function ProfilePage() {
                                             value={userData.email || ''}
                                             readOnly
                                             disabled
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                            className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg text-gray-500 cursor-not-allowed"
                                         />
                                     </div>
 
@@ -268,7 +415,7 @@ export default function ProfilePage() {
                                             type="text"
                                             value={editedData.course || ''}
                                             onChange={(e) => setEditedData({ ...editedData, course: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             placeholder="e.g., Computer Science"
                                         />
                                     </div>
@@ -278,7 +425,7 @@ export default function ProfilePage() {
                                         <select
                                             value={editedData.yearOfStudy || ''}
                                             onChange={(e) => setEditedData({ ...editedData, yearOfStudy: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         >
                                             <option value="">Select year</option>
                                             <option value="Year 1">Year 1</option>
@@ -301,7 +448,7 @@ export default function ProfilePage() {
                                                     subject: '' // Reset subject when faculty changes
                                                 });
                                             }}
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         >
                                             <option value="">Select faculty</option>
                                             {Object.keys(SUBJECT_DATA).map(faculty => (
@@ -316,7 +463,7 @@ export default function ProfilePage() {
                                             <select
                                                 value={editedData.subject || ''}
                                                 onChange={(e) => setEditedData({ ...editedData, subject: e.target.value })}
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             >
                                                 <option value="">Select subject</option>
                                                 {SUBJECT_DATA[editedData.faculty as keyof typeof SUBJECT_DATA]?.map(subject => (
@@ -331,7 +478,7 @@ export default function ProfilePage() {
                                         <textarea
                                             value={editedData.bio || ''}
                                             onChange={(e) => setEditedData({ ...editedData, bio: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             rows={4}
                                             placeholder="Tell potential study partners about yourself..."
                                         />
@@ -343,7 +490,7 @@ export default function ProfilePage() {
                             <div className="bg-white p-8 rounded-lg border border-gray-200">
                                 <div className="mb-6">
                                     <h3 className="text-2xl font-medium text-gray-900 mb-2">Availability</h3>
-                                    <p className="text-gray-600">Set your study hours and days.</p>
+                                    <p className="text-slate-500">Set your study hours and days.</p>
                                 </div>
 
                                 <div className="space-y-6">
@@ -368,9 +515,9 @@ export default function ProfilePage() {
                                                                     onClick={() => toggleAvailability(day, time)}
                                                                     className={`w-16 h-8 rounded-md transition-colors ${editedData.availability?.[day]?.[time]
                                                                         ? 'bg-blue-600 text-white'
-                                                                        : 'bg-gray-100 hover:bg-gray-200'} text-sm font-bold capitalize`}
+                                                                        : 'bg-blue-100 hover:bg-blue-200'} text-sm font-bold capitalize`}
                                                                 >
-                                                                    {editedData.availability?.[day]?.[time] ? '✓' : ''}
+                                                                    {editedData.availability?.[day]?.[time] ? '\u2713' : ''}
                                                                 </button>
                                                             </td>
                                                         ))}
@@ -386,7 +533,7 @@ export default function ProfilePage() {
                             <div className="bg-white p-8 rounded-lg border border-gray-200">
                                 <div className="mb-6">
                                     <h3 className="text-2xl font-medium text-gray-900 mb-2">Preferences</h3>
-                                    <p className="text-gray-600">Tell us about your study preferences.</p>
+                                    <p className="text-slate-500">Tell us about your study preferences.</p>
                                 </div>
 
                                 <div className="space-y-8">
@@ -398,7 +545,7 @@ export default function ProfilePage() {
                                                     key={option}
                                                     type="button"
                                                     className={`flex flex-col items-start p-4 border rounded-lg cursor-pointer transition-all
-                                                        ${editedData.coStudyingAtmosphere === option ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-600' : 'bg-white hover:border-gray-400'}`}
+                                                        ${editedData.coStudyingAtmosphere === option ? 'bg-blue-100 border-blue-600 ring-2 ring-blue-600' : 'bg-white hover:border-gray-400'}`}
                                                     onClick={() => setEditedData({
                                                         ...editedData,
                                                         coStudyingAtmosphere: editedData.coStudyingAtmosphere === option ? '' : option,
@@ -426,16 +573,16 @@ export default function ProfilePage() {
                                                     key={option}
                                                     type="button"
                                                     className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all
-                                                        ${editedData.cameraPreference === option ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-600' : 'bg-white hover:border-gray-400'}`}
+                                                        ${editedData.cameraPreference === option ? 'bg-blue-100 border-blue-600 ring-2 ring-blue-600' : 'bg-white hover:border-gray-400'}`}
                                                     onClick={() => setEditedData({
                                                         ...editedData,
                                                         cameraPreference: editedData.cameraPreference === option ? '' : option,
                                                     })}
                                                 >
                                                     <span>
-                                                        {option === 'Camera always on' && '📹 Camera always on'}
-                                                        {option === 'Camera for check-ins' && '📷 Camera for check-ins'}
-                                                        {option === 'Camera always off' && '🚫 Camera always off'}
+                                                        {option === 'Camera always on' && '\ud83d\udcf9 Camera always on'}
+                                                        {option === 'Camera for check-ins' && '\ud83d\udcf7 Camera for check-ins'}
+                                                        {option === 'Camera always off' && '\ud83d\udeab Camera always off'}
                                                         {option === 'Flexible' && 'Flexible'}
                                                     </span>
                                                 </button>
@@ -466,6 +613,238 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         )}
+                        {activeTab === 'settings' && (
+                            <div className="space-y-8">
+                                {/* Privacy & Communication Settings */}
+                                <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <Shield className="h-6 w-6" />
+                                            Privacy & Communication
+                                        </h3>
+                                        <p className="text-slate-500">Control your profile visibility and communication preferences.</p>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-base font-medium text-gray-900">Profile Visibility</label>
+                                                <p className="text-sm text-gray-600">Make your profile public or private to other users</p>
+                                            </div>
+                                            <button
+                                                onClick={() => updateSetting('profileVisibility', localSettings.profileVisibility === 'public' ? 'private' : 'public')}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${localSettings.profileVisibility === 'public' ? 'bg-blue-600' : 'bg-gray-200'
+                                                    }`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localSettings.profileVisibility === 'public' ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-base font-medium text-gray-900">Online Status</label>
+                                                <p className="text-sm text-gray-600">Show when you're available for sessions</p>
+                                            </div>
+                                            <button
+                                                onClick={() => updateSetting('showOnlineStatus', !localSettings.showOnlineStatus)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${localSettings.showOnlineStatus ? 'bg-blue-600' : 'bg-gray-200'
+                                                    }`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localSettings.showOnlineStatus ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-base font-medium text-gray-900 mb-2 block">Session History Visibility</label>
+                                            <select
+                                                value={localSettings.sessionHistoryVisibility}
+                                                onChange={(e) => updateSetting('sessionHistoryVisibility', e.target.value)}
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="private">Private - Only you can see</option>
+                                                <option value="study-partners">Study Partners - Only your session partners</option>
+                                                <option value="public">Public - Anyone can see</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Notification Settings */}
+                                <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <Bell className="h-6 w-6" />
+                                            Notification Settings
+                                        </h3>
+                                        <p className="text-slate-500">Manage how and when you receive notifications.</p>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-base font-medium text-gray-900">Email Notifications</label>
+                                                <p className="text-sm text-gray-600">Receive session reminders, messages, and new matches via email</p>
+                                            </div>
+                                            <button
+                                                onClick={() => updateSetting('emailNotifications', !localSettings.emailNotifications)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${localSettings.emailNotifications ? 'bg-blue-600' : 'bg-gray-200'
+                                                    }`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localSettings.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-base font-medium text-gray-900 mb-2 block">Session Reminders</label>
+                                            <select
+                                                value={localSettings.sessionReminderTime}
+                                                onChange={(e) => updateSetting('sessionReminderTime', e.target.value)}
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="15min">15 minutes before</option>
+                                                <option value="30min">30 minutes before</option>
+                                                <option value="1hr">1 hour before</option>
+                                                <option value="disabled">No reminders</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Account & Security */}
+                                <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <Shield className="h-6 w-6" />
+                                            Account & Security
+                                        </h3>
+                                        <p className="text-slate-500">Manage your account security and data.</p>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="text-base font-medium text-gray-900 mb-2 block">Backup Email</label>
+                                            <input
+                                                type="email"
+                                                value={localSettings.backupEmail}
+                                                onChange={(e) => setLocalSettings(prev => ({ ...prev, backupEmail: e.target.value }))}
+                                                onBlur={() => updateSetting('backupEmail', localSettings.backupEmail)}
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter backup email address"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-base font-medium text-gray-900 mb-2 block">Backup Phone</label>
+                                            <input
+                                                type="tel"
+                                                value={localSettings.backupPhone}
+                                                onChange={(e) => setLocalSettings(prev => ({ ...prev, backupPhone: e.target.value }))}
+                                                onBlur={() => updateSetting('backupPhone', localSettings.backupPhone)}
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter backup phone number"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <button
+                                                onClick={handleDataExport}
+                                                disabled={exporting}
+                                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-base font-medium transition-colors disabled:opacity-50"
+                                            >
+                                                {exporting ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        Exporting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Download className="h-4 w-4" />
+                                                        Export My Data
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Accessibility & Display */}
+                                <div className="bg-white p-8 rounded-lg border border-gray-200">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                            <Type className="h-6 w-6" />
+                                            Accessibility & Display
+                                        </h3>
+                                        <p className="text-slate-500">Customise your viewing experience.</p>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-base font-medium text-gray-900">Dark Mode</label>
+                                                <p className="text-sm text-gray-600">Switch between light and dark themes</p>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setDarkMode(!darkMode);
+                                                }}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? 'bg-blue-600' : 'bg-gray-200'
+                                                    }`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-base font-medium text-gray-900 mb-2 block">Font Size</label>
+                                            <select
+                                                value={fontSize}
+                                                onChange={(e) => setFontSize(e.target.value)}
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="small">Small</option>
+                                                <option value="medium">Medium</option>
+                                                <option value="large">Large</option>
+                                                <option value="extra-large">Extra Large</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-base font-medium text-gray-900 mb-2 block">Language</label>
+                                            <select
+                                                value={language}
+                                                onChange={(e) => setLanguage(e.target.value)}
+                                                className="w-full px-4 py-3 border border-blue-100 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="en-GB">English (UK)</option>
+                                                <option value="en-US">English (US)</option>
+                                                <option value="es">Español</option>
+                                                <option value="fr">Français</option>
+                                                <option value="de">Deutsch</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Delete Account Section */}
+                                <div className="bg-white p-8 rounded-lg border border-red-200">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-medium text-red-900 mb-2">Delete Account</h3>
+                                        <p className="text-red-600">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                                    </div>
+                                    <button
+                                        onClick={handleDeleteAccount}
+                                        disabled={deleting}
+                                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-colors disabled:opacity-50"
+                                    >
+                                        {deleting ? 'Deleting...' : 'Delete Account'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Save Button */}
@@ -488,6 +867,7 @@ export default function ProfilePage() {
                             )}
                         </button>
                     </div>
+
                 </div>
             ) : (
                 <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
