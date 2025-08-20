@@ -64,6 +64,13 @@ _Last updated: 2024-06-09 by AI assistant._
 - [x] Image optimization
 - [x] Caching strategies (Firestore offline persistence enabled)
 
+### **Dispute Appeal Workflow**
+- [x] User can appeal resolved/rejected disputes
+- [x] Submit reason/evidence for appeal
+- [x] Admin review process
+- [x] Audit trail for disputes
+- [x] Notifications for new appeals (in-app and email)
+
 ---
 
 ## **❌ MISSING/INCOMPLETE FEATURES**
@@ -79,12 +86,12 @@ _Last updated: 2024-06-09 by AI assistant._
   - [x] User suspension/activation
 
 #### **Messaging System**
-- [x] **In-app messaging between users**
+- [ ] **In-app messaging between users**
   - [x] Direct message interface
   - [x] Message history
-  - [x] Real-time notifications
+  - [ ] Real-time notifications
   - [x] Message status (read/unread)
-  - [x] File/image sharing capability
+  - [ ] File/image sharing capability
 
 #### **Session Management Enhancement**
 - [x] **Session start confirmation flow**
@@ -98,12 +105,11 @@ _Last updated: 2024-06-09 by AI assistant._
   - [x] Issue reporting system
 
 #### **Automated Systems**
-- [x] **Scheduled jobs setup**
-  - [x] Session cleanup automation
-  - [x] Expired undo action cleanup
-  - [x] Vouch score penalty application
-  - [x] Email reminder system
-  - [x] Analytics data aggregation
+- [ ] **Scheduled jobs setup**
+  - [x] Session cleanup and expired undo cleanup implemented; manual/admin trigger exists
+  - [ ] Production scheduling (cron) for reminders/no-show/cleanup
+  - [ ] Email reminder system
+  - [ ] Analytics data aggregation schedule
 
 ### **Medium Priority**
 
@@ -133,11 +139,11 @@ _Last updated: 2024-06-09 by AI assistant._
 
 #### **Email System Enhancement**
 - [ ] **Professional email templates**
-  - [ ] Session reminders
-  - [ ] Partner requests
-  - [ ] Account verification
-  - [ ] Password reset
-  - [ ] Welcome series
+  - [ ] Session reminders (planned)
+  - [ ] Partner requests (planned)
+  - [ ] Account verification (template pending)
+  - [ ] Password reset (template pending)
+  - [ ] Welcome series (planned)
 
 ### **Low Priority**
 
@@ -154,11 +160,11 @@ _Last updated: 2024-06-09 by AI assistant._
   - [x] System health checks
 
 #### **Accessibility & Compliance**
-- [ ] **WCAG 2.1 compliance**
-  - [ ] Screen reader support
-  - [ ] Keyboard navigation
-  - [ ] Color contrast compliance
-  - [ ] Focus management
+- [ ] **WCAG 2.1 compliance (in progress)**
+  - [ ] Screen reader support (landmarks, labels)
+  - [ ] Keyboard navigation and focus management
+  - [ ] Colour contrast compliance
+  - [ ] Skip links and visible focus states
 - [x] **Data protection & compliance**
   - [x] Privacy policy
   - [x] Terms of service
@@ -206,36 +212,29 @@ _Last updated: 2024-06-09 by AI assistant._
 ## **⚠️ IMPORTANT LIMITATIONS & GAPS**
 
 ### **Conflict Resolution & Dispute Management**
-- [ ] **No intelligent dispute resolution system**
-  - [ ] "He said/she said" situations have no mediation
-  - [ ] No human review process for complex disputes
-  - [ ] No evidence collection system (screenshots, logs)
-  - [ ] No appeal process for penalty decisions
+- [x] **No intelligent dispute resolution system**
+  - [x] "He said/she said" situations have no mediation
+  - [x] Human review process for complex disputes
+  - [x] Evidence collection system (screenshots, logs)
 
-- [ ] **Limited behavioral assessment**
-  - [ ] No reporting system for "partner was distracted"
-  - [ ] No quality assessment for session conduct
-  - [ ] No feedback mechanism for study partner behavior
-  - [ ] No handling of communication style conflicts
 
-- [ ] **Basic technical issue handling**
-  - [ ] No automatic detection of platform crashes
-  - [ ] No partial credit system for interrupted sessions
-  - [ ] No technical issue categorization
-  - [ ] No compensation for technical problems
+- [x] **Basic technical issue handling**
+  - [x] Automatic detection of platform crashes
+  - [x] Partial credit system for interrupted sessions (handled via dispute review)
+  - [x] Technical issue categorization (user reporting, admin analytics, Sentry link)
+  - [x] Compensation for technical problems (handled via admin review and dispute workflow)
 
 ### **AI & Intelligence Gaps**
-- [ ] **Current AI is basic rule-based**
-  - [ ] No context-aware penalty application
-  - [ ] No behavioral pattern analysis
-  - [ ] No intelligent conflict mediation
-  - [ ] No predictive analytics for user behavior
+- [ ] **Current AI**: Flash-based session recovery/penalties; advanced features pending
+  - [ ] Behavioural pattern analysis
+  - [ ] Intelligent conflict mediation
+  - [ ] Predictive analytics for user behaviour
 
-- [ ] **Missing advanced AI features**
-  - [ ] No smart study partner recommendations
-  - [ ] No learning behavior insights
-  - [ ] No academic performance prediction
-  - [ ] No natural language processing for disputes
+- [ ] **Advanced AI features (optional)**
+  - [ ] Smart study partner recommendations
+  - [ ] Learning behaviour insights
+  - [ ] Academic performance prediction
+  - [ ] NLP-assisted dispute handling
 
 ### **User Experience Limitations**
 - [ ] **Communication problems**
@@ -252,23 +251,22 @@ _Last updated: 2024-06-09 by AI assistant._
 
 ### **System Robustness**
 - [ ] **Error handling gaps**
-  - [ ] No graceful handling of edge cases
-  - [ ] No fallback mechanisms for failures
-  - [ ] No comprehensive error logging
-  - [ ] No user-friendly error recovery
+  - [ ] Improve handling of edge cases
+  - [ ] Add fallback mechanisms for failures
+  - [ ] Expand error logging coverage
+  - [ ] Improve user-friendly recovery flows
 
 - [ ] **Scalability concerns**
   - [ ] No load testing for high user volumes
-  - [ ] No performance optimization for large datasets
+  - [ ] No performance optimisation for large datasets
   - [ ] No caching strategies for frequent queries
-  - [ ] No rate limiting for API endpoints
+  - [ ] Rate limiting hardening beyond demo defaults
 
 ### **Business Logic Gaps**
-- [ ] **Limited penalty system**
-  - [ ] Only basic timing-based penalties
-  - [ ] No consideration of mitigating circumstances
-  - [ ] No appeal or review process
-  - [ ] No graduated penalty system
+- [ ] **Penalty system enhancements**
+  - [ ] Consider mitigating circumstances
+  - [ ] Graduated penalties beyond timing-based
+  - [ ] Appeals & admin review present; add automated triage
 
 - [ ] **Missing accountability features**
   - [ ] No peer review system
@@ -293,14 +291,14 @@ _Last updated: 2024-06-09 by AI assistant._
 
 ## **📊 PROGRESS TRACKING**
 
-**Overall Completion: ~90%** (Updated to reflect user stats completion)
+**Overall Completion: ~85%** (pending email templates, WCAG, scheduling, disputes polish)
 
 - **Core Features**: 95% ✅
 - **Admin Features**: 90% ✅
-- **Messaging**: 20% ❌
+- **Messaging**: 50% ⚠️ (conversations + read status present; real-time/attachments pending)
 - **UI/UX Polish**: 70% ⚠️
 - **Technical Infrastructure**: 75% ✅
-- **Conflict Resolution**: 30% ❌ (Major gap)
+- **Conflict Resolution**: 40% ⚠️ (appeals flow present; mediation pending)
 - **AI Intelligence**: 40% ⚠️ (Basic implementation)
 - **System Robustness**: 65% ✅
 
@@ -311,10 +309,10 @@ _Last updated: 2024-06-09 by AI assistant._
 - **Advanced AI Features**: 15% - Only basic rule-based penalties
 
 **Next Sprint Priorities:**
-1. Complete admin user management
-2. Implement basic messaging system
-3. Enhance session management flows
-4. Set up automated scheduled jobs
+1. Monitoring/analytics (Sentry, GA4) and security headers/CSP
+2. Branded email templates and Resend production setup
+3. Scheduled jobs: reminders, no-show detection, cleanup, analytics aggregation
+4. WCAG 2.1 quick wins (focus states, labels, contrast)
 
 **Estimated Time to MVP Completion: 2-3 weeks**
 

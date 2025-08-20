@@ -19,6 +19,8 @@ import { RescheduleModal } from "@/components/sessions/reschedule-modal";
 import { adjustVouchScoreAction } from "@/lib/actions";
 import { UndoNotification } from '@/components/undo/UndoNotification';
 import JitsiMeeting from 'react-jitsi';
+import { DisputeReportModal } from '@/components/sessions/DisputeReportModal';
+import * as Sentry from '@sentry/nextjs';
 
 // --- TYPES ---
 interface Session {
@@ -70,6 +72,9 @@ function SessionCard({ session, currentUser, currentUserName, onCancel }: {
     const [attendance, setAttendance] = useState<{ [userId: string]: { joined: Date[]; left: Date[] } }>({});
     const [showSummary, setShowSummary] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [showDisputeModal, setShowDisputeModal] = useState(false);
+    const [disputeReason, setDisputeReason] = useState<string | undefined>(undefined);
+    const [sentryEventId, setSentryEventId] = useState<string | undefined>(undefined);
 
     // Undo handler
     const handleUndo = async (id: string) => {
@@ -257,6 +262,18 @@ function SessionCard({ session, currentUser, currentUserName, onCancel }: {
         setShowVideo(false);
         setShowSummary(true);
         if (timerRef.current) clearInterval(timerRef.current);
+    };
+
+    const openDisputeModal = (reason?: string) => {
+        let eventId: string | undefined = undefined;
+        if (reason === 'technical issue' && typeof window !== 'undefined' && Sentry && typeof Sentry.lastEventId === 'function') {
+            try {
+                eventId = Sentry.lastEventId();
+            } catch { }
+        }
+        setDisputeReason(reason);
+        setSentryEventId(eventId);
+        setShowDisputeModal(true);
     };
 
     if (!partner) return null;
@@ -571,6 +588,18 @@ function SessionCard({ session, currentUser, currentUserName, onCancel }: {
                             </button>
                         </>
                     )}
+                    <button
+                        className="mt-2 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        onClick={() => openDisputeModal(undefined)}
+                    >
+                        Report Dispute
+                    </button>
+                    <button
+                        className="mt-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+                        onClick={() => openDisputeModal('technical issue')}
+                    >
+                        Report Technical Issue
+                    </button>
                 </div>
             </div>
 
@@ -607,9 +636,19 @@ function SessionCard({ session, currentUser, currentUserName, onCancel }: {
                             ))}
                         </ul>
                         <Button onClick={() => setShowSummary(false)} className="w-full bg-[#6366f1] text-white hover:bg-[#4f2672]">Close</Button>
+                        <Button onClick={() => { openDisputeModal('technical issue'); setShowSummary(false); }} className="w-full mt-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Report Technical Issue</Button>
                     </div>
                 </div>
             )}
+            <DisputeReportModal
+                sessionId={session.id}
+                reportedBy={currentUser.uid}
+                reportedAgainst={partner?.id || ''}
+                isOpen={showDisputeModal}
+                onClose={() => setShowDisputeModal(false)}
+                reason={disputeReason}
+                sentryEventId={sentryEventId}
+            />
         </>
     );
 }

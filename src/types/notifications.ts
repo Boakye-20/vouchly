@@ -11,7 +11,8 @@ export type NotificationType =
     | 'message_received'
     | 'vouch_score_updated'
     | 'inactive_reminder'
-    | 'system';
+    | 'system'
+    | 'dispute';
 
 export interface NotificationData {
     id: string;
@@ -44,7 +45,8 @@ export const NOTIFICATION_TITLES: Record<NotificationType, string> = {
     message_received: 'New Message',
     vouch_score_updated: 'Vouch Score Updated',
     inactive_reminder: 'We Miss You!',
-    system: 'System Notification'
+    system: 'System Notification',
+    dispute: 'Dispute Update',
 };
 
 export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
@@ -60,5 +62,6 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
     message_received: 'message-square',
     vouch_score_updated: 'award',
     inactive_reminder: 'heart',
-    system: 'info'
+    system: 'info',
+    dispute: 'alert-triangle',
 };

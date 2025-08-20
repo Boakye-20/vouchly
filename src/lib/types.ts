@@ -20,3 +20,18 @@ export interface VouchlyUser {
     status: 'available' | 'busy' | 'offline';
     createdAt: Date;
 }
+
+export interface SessionDispute {
+    id: string; // Firestore doc ID
+    sessionId: string;
+    reportedBy: string; // userId
+    reportedAgainst: string; // userId
+    reason: string; // e.g., "no-show", "inappropriate behaviour", "technical issue"
+    description: string;
+    evidenceUrls?: string[]; // links to uploaded files/screenshots
+    status: 'open' | 'under_review' | 'resolved' | 'rejected' | 'appealed';
+    adminNotes?: string;
+    resolution?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}

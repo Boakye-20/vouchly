@@ -41,6 +41,8 @@
   - User management, search/filter, account status, Vouch Score adjustment
   - Analytics: user growth, session rates, Vouch Score distribution, usage stats
   - System health checks and scheduled jobs
+  - Dispute appeal workflow: users can appeal resolved/rejected disputes, submit reason/evidence, admins are notified (in-app/email), and appeals are reviewed in the admin dashboard.
+  - Technical issue handling: Sentry crash detection, user reporting from session UI, admin analytics/filtering, Sentry event link-through, and compensation via dispute review.
 
 - **Video Sessions:**
   - Embedded Jitsi video calls with Vouchly branding
@@ -62,8 +64,8 @@
 
 ## Style Guidelines
 
-- Primary: Indigo (#4B0082)
-- Background: Light lavender (#E6E6FA)
-- Accent: Gold (#FFD700)
-- Fonts: 'Belleza' (headlines), 'Alegreya' (body), 'Source Code Pro' (code)
-- Modern, minimalist icons and subtle animations
+- Primary: Blue (`#2563EB`, Tailwind `blue-600`)
+- Background: White (`#FFFFFF`) with slate/grey for secondary text
+- Accent: Blue-600 for all interactive elements (no purple, no gradients)
+- Fonts: Use the same font stack as the landing page for consistency
+- Icons: Notion-style, minimalist icons; subtle animations only

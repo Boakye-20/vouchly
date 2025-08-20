@@ -169,6 +169,58 @@ Authorization: Bearer <firebase_id_token>
 
 ---
 
+## Disputes APIs
+
+### User Dispute Reporting
+- **POST** `/api/sessions/[sessionId]/disputes`
+- **Auth:** Yes
+- **Description:** Create a dispute for a session with optional evidence.
+- **Example Request:**
+```json
+{
+  "reason": "Partner did not attend",
+  "details": "Waited 15 minutes, no response"
+}
+```
+
+### Evidence Upload
+- **POST** `/api/sessions/[sessionId]/disputes/upload`
+- **Auth:** Yes
+- **Description:** Upload evidence files (multipart/form-data) for a dispute.
+
+### List Session Disputes
+- **GET** `/api/sessions/[sessionId]/disputes`
+- **Auth:** Yes
+- **Description:** List disputes associated with the session.
+
+### Admin List Disputes
+- **GET** `/api/admin/disputes?status=open|under_review|resolved|rejected|appealed`
+- **Auth:** Yes (admin only)
+- **Description:** List disputes filtered by status.
+
+### Admin Update Dispute
+- **PATCH** `/api/admin/disputes`
+- **Auth:** Yes (admin only)
+- **Description:** Update dispute status and notes.
+- **Example Request:**
+```json
+{
+  "id": "dispute_id",
+  "status": "under_review",
+  "adminNotes": "Contacted both parties",
+  "resolution": null
+}
+```
+
+---
+
+## Undo API
+
+### Undo Recent Action
+- **POST** `/api/undo`
+- **Auth:** Yes
+- **Description:** Undo the most recent eligible session action within the allowed window.
+
 ## Data Protection & Compliance
 - **Privacy Policy:** [`/privacy`](./src/app/privacy/page.tsx)
 - **Terms of Service:** [`/terms`](./src/app/terms/page.tsx)

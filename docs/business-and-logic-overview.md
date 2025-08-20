@@ -1,11 +1,10 @@
 # Vouchly: Business and Logic Overview
 
 > **Update July 2025:**
-> - Added a comprehensive settings system (dark mode, font size, language, privacy, notification, account recovery)
-> - Session history visibility: users can set their session history to public, study partners only, or private, enforced in the partner profile modal
-> - Data export: users can export their data as JSON from the settings page
-> - Accessibility improvements: font size scaling, dark mode, and language selection
-> - UI/UX: all legal and info pages now use consistent card-based layouts, and the global header adapts to authentication state
+> - Settings and data export are available; dark mode and language selection are planned (WCAG in progress)
+> - Session history visibility: users can set history to public, partners only, or private (enforced in partner profile modal)
+> - Accessibility work is ongoing (focus states, labels, contrast)
+> - Info pages use consistent card layouts; global header adapts to authentication state
 
 ## What is Vouchly?
 Vouchly is a SaaS platform for UK university students to find reliable study partners, schedule sessions, and build academic accountability through a gamified, AI-powered trust system (Vouch Score). The platform features partner browsing, session management, in-app messaging, real-time notifications, and robust admin/analytics tools.
@@ -41,8 +40,8 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 - Gold/Silver/Bronze/Low match tiers
 
 ### 6. Messaging
-- In-app, real-time messaging with file/image sharing
-- Read/unread status and message history
+- Conversations UI with message history and read/unread status
+- Real-time messaging and file/image sharing are planned
 
 ### 7. Notifications
 - Real-time (websockets) for requests, updates, and messages
@@ -62,9 +61,9 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 - Strict Firestore rules, rate limiting, XSS/CSRF protection, encryption
 
 ### 11. UI/UX
-- Responsive, mobile-optimized, accessible (WCAG 2.1 in progress)
-- Modern, minimalist icons and branding
-- Subtle transitions and feedback animations
+- Responsive, mobile-optimised; WCAG 2.1 improvements in progress
+- Minimalist black/blue design, blue-600 accents, consistent fonts
+- Notion-style icons; subtle transitions and feedback animations
 
 ### 12. User Settings & Accessibility (NEW)
 - Global settings for dark mode, font size, language, privacy, notification, and account recovery
@@ -73,6 +72,17 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 - Data export: users can download all their data as JSON from the settings page
 - Session history visibility: users can set their session history to public, study partners only, or private; this is enforced in the partner profile modal
 - UI/UX: all legal and info pages use consistent card-based layouts, and the global header adapts to authentication state
+
+### 13. Dispute Appeals & Admin Review (NEW)
+- Users can appeal resolved or rejected disputes from their dashboard, submitting a reason and optional evidence.
+- Admins are notified (in-app and email) when a new appeal is submitted.
+- Appeals are highlighted in the admin dashboard, with all submitted evidence and reason visible.
+- Admins can review, resolve, or reject appeals, and all actions are logged in the audit trail.
+- Automatic detection of platform crashes (Sentry integration)
+- Users can report technical issues from the session UI, with Sentry event ID linked for admin review
+- Admin dashboard provides analytics and filtering for technical issues, and direct Sentry event access
+- Compensation/partial credit for technical problems is handled via dispute review and admin workflow
+- All technical issues are auditable and actionable in the admin dashboard
 
 ---
 

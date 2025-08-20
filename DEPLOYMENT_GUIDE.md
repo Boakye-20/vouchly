@@ -73,22 +73,29 @@ NEXT_PUBLIC_APP_URL=https://your-production-url.com
 
 ### Public Routes
 - **Homepage**: `/`
-- **Login**: `/auth/signin`
-- **Sign Up**: `/auth/signup`
-- **Pricing**: `/pricing`
-- **About**: `/about`
+- **Auth**: `/auth` (combined sign in/sign up)
+- **Verify Email**: `/auth/verify-email`
 - **Contact**: `/contact`
 - **Privacy Policy**: `/privacy`
 - **Terms of Service**: `/terms`
+- **Community Guidelines**: `/community-guidelines`
+- **Help Centre**: `/help-center`
+- **How It Works**: `/how-it-works`
+- **Features**: `/features`
+- **Safety**: `/safety`
+- **Universities**: `/universities`
+- **Verify University**: `/verify-university`
 
 ### User Dashboard
 - **Dashboard Home**: `/dashboard`
+- **Browse Partners**: `/dashboard/browse`
 - **Sessions**: `/dashboard/sessions`
 - **Messages**: `/dashboard/messages`
 - **Conversation**: `/dashboard/messages/[sessionId]`
 - **Statistics**: `/dashboard/stats`
-- **Settings**: `/dashboard/settings`
-- **Billing**: `/dashboard/billing`
+- **Profile**: `/dashboard/profile`
+- **Profile Setup**: `/dashboard/profile/setup`
+- **Disputes (user)**: `/dashboard/disputes` (if enabled)
 - **Data Export API**: `/api/user/data-export` (GET, authenticated)
 - **Data Export Download API**: `/api/user/data-export/download/[userId]` (GET, authenticated)
 - **Account Deletion API**: `/api/user/delete-account` (DELETE, authenticated)
@@ -289,14 +296,10 @@ Headers: { "Authorization": "Bearer <firebase_id_token>" }
 - Vouch score changes create audit trail entries
 - Consider implementing more robust role-based access control for production
 
-### Messaging System Features
-- **Real-time messaging** between session participants
-- **File and image sharing** (up to 10MB per file)
-- **Read/unread status** with automatic marking when viewed
-- **Message history** with attachment support
-- **Unread message indicators** in conversation list
-- **Attachment previews** in message list
-- **Supported file types**: Images, PDFs, documents, text files
+### Messaging System Features (current status)
+- **Conversations UI** in dashboard with message history
+- **Read status API**: mark messages as read (`POST /api/messages/[sessionId]/read`)
+- **Real-time and attachments**: planned; attachment uploads and previews are not yet enabled
 
 ### Session Management Features
 - **Session start confirmation** requiring both participants to confirm
@@ -317,6 +320,38 @@ Headers: { "Authorization": "Bearer <firebase_id_token>" }
 - **Weekly activity charts** displaying study patterns
 - **Early ending statistics** tracking session completion patterns
 - **Progress visualization** with charts and graphs for easy interpretation
+
+## Dispute Management System (NEW)
+
+### User-Facing
+- Users can report disputes for any session from the session dashboard.
+- Dispute evidence (images, PDFs) can be uploaded and is stored in Firebase Storage.
+- Dispute status and history can be viewed in the user dashboard (if implemented).
+
+### Admin Dashboard
+- Admins can review, update, and resolve disputes at:
+  - **Admin Dispute Dashboard:** `/dashboard/admin/disputes`
+- Disputes can be filtered by status, and evidence can be previewed/downloaded.
+- Admins can update dispute status, add notes, and record resolutions.
+- When a dispute is resolved, rejected, or appealed, both parties receive an in-app and email notification.
+
+### API Endpoints
+- **User Dispute Reporting:** `POST /api/sessions/[sessionId]/disputes`
+- **Evidence Upload:** `POST /api/sessions/[sessionId]/disputes/upload` (multipart/form-data)
+- **List Session Disputes:** `GET /api/sessions/[sessionId]/disputes`
+- **Admin List Disputes:** `GET /api/admin/disputes?status=open|under_review|resolved|rejected|appealed`
+- **Admin Update Dispute:** `PATCH /api/admin/disputes` (body: `{ id, status, adminNotes, resolution }`)
+
+### Dispute Appeal Workflow
+- Users can submit appeals for resolved/rejected disputes from their dashboard, providing a reason and optional evidence.
+- Admins are notified (in-app and email) when a new appeal is submitted.
+- Appeals are highlighted in the admin dashboard, with all submitted evidence and reason visible.
+- Admins can review, resolve, or reject appeals, and all actions are logged in the audit trail.
+- Automatic detection of platform crashes (Sentry integration)
+- Users can report technical issues directly from session UI; Sentry event IDs are linked for admin review
+- Admin dashboard provides analytics and filtering for technical issues
+- Compensation/partial credit for technical problems is handled via dispute review and admin workflow
+- All technical issues are auditable and actionable in the admin dashboard
 
 ## Maintenance
 
