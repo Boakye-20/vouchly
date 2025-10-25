@@ -91,6 +91,7 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 ### Starting Score
 - **All users start with 80 points** (fair baseline)
 - **Range: 0-100** (enforced by system)
+- **Precision:** Scores are stored as integers, rounded to nearest whole number
 
 ### Score Changes by Event Type
 
@@ -104,6 +105,7 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 | `CANCELLED_WITH_NOTICE` | 0 | Cancelled with proper notice (no penalty) |
 | `RESCHEDULED_WITH_NOTICE` | 0 | First reschedule (no penalty) |
 | `START_CONFIRMED` | 0 | Session started (no points) |
+| `ADJUSTMENT` | ±X | Manual adjustment by admin |
 
 ### Rescheduling Logic
 - **First reschedule:** No penalty (0 points)
@@ -111,24 +113,93 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 - **Consecutive reschedule counter resets** when:
   - A session is completed successfully
   - A penalty is applied (after second consecutive reschedule)
-- **Non-consecutive reschedules:** No penalty (even if you reschedule 10 times in a month, as long as you complete sessions between them)
+  - 30 days pass without any reschedules
+- **Non-consecutive reschedules:** No penalty (even if you reschedule multiple times, as long as you complete sessions between them)
 
 ### Cancellation Logic
 - **Cancelled with notice (>4 hours before):** No penalty (0 points)
 - **Cancelled within 4 hours:** -10 points (treated as no-show)
 - **Undo window:** 5 minutes to undo cancellation
+- **Multiple cancellations:** Each cancellation is treated independently
 
 ### Session Completion Logic
 - **Both users must confirm completion** for +2 points
 - **If only one confirms:** No points awarded
 - **Session must be started** (both users confirmed start) before completion points can be earned
+- **Completion window:** Users have 24 hours after session end to confirm completion
 
 ### Vouch Score History
 - **Every score change is logged** with:
   - Event type and reason
   - Score before and after
   - Session ID and timestamp
-  - AI reasoning (when applicable)
+  - Admin notes (for manual adjustments)
+  - IP address and user agent for audit purposes
+  - Related transaction ID (if applicable)
+
+### Special Cases
+- **New users (first 3 sessions):** Reduced penalties for first-time offenses
+- **Consistent performers:** Users with >90% session completion rate get benefit of doubt for first late cancellation
+- **Repeat offenders:** Users with multiple infractions may face additional penalties at admin's discretion
+
+## Session State Machine
+
+### Core States
+1. **`requested`** - Initial state when session is created
+   - Can transition to: `scheduled`, `cancelled`
+   - Timeout: 24 hours before auto-cancellation
+
+2. **`scheduled`** - Both users have accepted
+   - Can transition to: `in_progress`, `cancelled`
+   - Locks 4 hours before start time
+   - Sends reminder notifications at 24h and 1h before start
+
+3. **`in_progress`** - Session is active
+   - Can transition to: `completed`, `cancelled`
+   - Both users must confirm start
+   - Auto-completes after 6 hours if no action
+
+4. **`completed`** - Session successfully finished
+   - Final state
+   - Triggers Vouch Score updates
+   - Generates session summary
+
+5. **`cancelled`** - Session was cancelled
+   - Can be undone within 5 minutes
+   - Triggers notifications to both users
+   - May affect Vouch Score based on timing
+
+### State Transitions
+- All transitions are validated server-side
+- Invalid transitions are rejected with detailed error messages
+- Each transition is logged for audit purposes
+- Some transitions trigger automatic notifications
+
+### Data Model
+```typescript
+interface Session {
+  id: string;
+  participantIds: string[];
+  scheduledStartTime: Timestamp;
+  scheduledEndTime: Timestamp;
+  status: 'requested' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  startConfirmedBy: Record<string, boolean>;
+  completionConfirmedBy: Record<string, boolean>;
+  vouchScoreImpact?: {
+    userId: string;
+    change: number;
+    reason: string;
+  }[];
+  metadata: {
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+    cancelledAt?: Timestamp;
+    completedAt?: Timestamp;
+    cancelledBy?: string;
+    cancellationReason?: string;
+  };
+}
+```
 
 ---
 
@@ -176,16 +247,131 @@ Vouchly is a SaaS platform for UK university students to find reliable study par
 | **Study Atmosphere** | 10% | Same preference → 10, different → 0 |
 | **University Bonus** | 5% | Same university → 5, different → 0 |
 
+### Advanced Matching Logic
+
+#### Schedule Overlap
+- Considers both weekly availability and one-time availability blocks
+- Accounts for timezone differences automatically
+- Respects user's "do not disturb" hours
+- Minimum session length: 30 minutes
+- Maximum session length: 4 hours
+
+#### Vouch Score Similarity
+- Uses a sliding scale for better granularity
+- Special handling for new users (< 5 sessions)
+- Considers rate of change (users with rapidly improving scores get slight boost)
+
+#### Subject Compatibility
+- Subject groups are defined in `lib/constants.ts`
+- Cross-discipline matches are possible but weighted lower
+- Users can specify multiple subjects of interest
+
 ### Match Tiers
-- **Gold Compatibility:** ≥80 points
-- **Silver Compatibility:** 60-79 points  
-- **Bronze Compatibility:** 40-59 points
-- **Low Match:** <40 points (optionally hidden)
+- **Gold Compatibility (80-100 points)**
+  - Excellent match across all dimensions
+  - High likelihood of successful sessions
+  - Prioritized in search results
+  
+- **Silver Compatibility (60-79 points)**
+  - Good overall match
+  - May have minor differences in preferences
+  - Shown by default in search
+  
+- **Bronze Compatibility (40-59 points)**
+  - Partial match
+  - May have significant differences in key areas
+  - Shown when "Show all matches" is enabled
+  
+- **Low Match (<40 points)**
+  - Poor compatibility
+  - Hidden by default
+  - Can be shown with "Show all matches"
 
 ### Filtering & Sorting
-- **Primary sort:** By Total Match Score (descending)
-- **Secondary filters:** University, subject, Vouch Score range, study atmosphere
-- **Real-time updates:** Match scores recalculate as Vouch Scores change
+
+#### Primary Sort
+1. **Relevance Score** (descending)
+   - Match score (80%)
+   - Online status (10%)
+   - Response rate (10%)
+
+#### Secondary Filters
+- **Availability**
+  - Online now
+  - Available this week
+  - Specific days/times
+  
+- **Academic**
+  - University
+  - Subject area
+  - Year of study
+  
+- **Behavioral**
+  - Minimum Vouch Score
+  - Response rate
+  - Session completion rate
+
+#### Real-time Updates
+- Scores update automatically when:
+  - User updates availability
+  - New sessions are completed
+  - Vouch Scores change
+  - User preferences are updated
+- Changes are reflected within 5 minutes
+
+## Analytics & Tracking
+
+### Core Metrics
+
+#### User Engagement
+- Daily/Monthly Active Users (DAU/MAU)
+- Session frequency and duration
+- Feature usage patterns
+- Retention rates
+
+#### Session Metrics
+- Session success rate
+- Average session duration
+- Common cancellation reasons
+- No-show rates
+
+#### Vouch Score Analytics
+- Distribution across user base
+- Correlation with session success
+- Impact of different actions on scores
+- Anomaly detection
+
+### Event Tracking
+
+#### Session Events
+- Session requested
+- Session accepted/rejected
+- Session started/completed
+- Session cancelled
+- Session rescheduled
+
+#### User Events
+- Sign up
+- Profile completion
+- Settings changes
+- Notifications received/opened
+
+#### System Events
+- API response times
+- Error rates
+- Performance metrics
+
+### Data Retention
+- Raw event data: 13 months
+- Aggregated metrics: 3 years
+- User data: Until account deletion
+- Anonymized data: Indefinitely
+
+### Privacy Controls
+- Users can opt out of non-essential tracking
+- All data is encrypted in transit and at rest
+- Regular security audits
+- GDPR/CCPA compliant
 
 ---
 
